@@ -22,9 +22,24 @@ h <- hist(disasters$Year, breaks = (1900.5:2021.5), main = , xlab = "Year", ylab
 ggplot(disasters, aes(x = Year)) + 
       geom_histogram(binwidth = 1) +
       labs(x = "Year", y = "Number of Global Disasters") +
-      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.background = element_rect(fill = NA), legend.key = element_rect(fill = NA))
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 # Alternatively, use ggplot for imaging: https://ggplot2.tidyverse.org/reference/geom_histogram.html
 
 drought <- filter(disasters, `Disaster Type` == "Drought") %>% arrange(Year)
+h <- hist(drought$Year, breaks = (1900.5:2021.5))
+history <- data.frame(h$mids, h$counts)
+ggplot(history, aes(x = h.mids, y = h.counts)) +
+      geom_line() +
+      labs(x = "Year", y = "Number of Global Droughts") +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
+droughtSA <- filter(disasters, `Disaster Type` == "Drought") %>% 
+      filter(Region == "Southern Africa") %>%
+      arrange(Year)
+h <- hist(droughtSA$Year, breaks = (1900.5:2021.5))
+historySA <- data.frame(h$mids, h$counts)
+ggplot(historySA, aes(x = h.mids, y = h.counts)) +
+      geom_line() +
+      labs(x = "Year", y = "Number of Droughts in Southern Africa") +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
