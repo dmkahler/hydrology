@@ -43,3 +43,23 @@ ggplot(historySA, aes(x = h.mids, y = h.counts)) +
       labs(x = "Year", y = "Number of Droughts in Southern Africa") +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
+annual_damages_droughtSA <- array(0, dim = 121) # the array made such that the index is the year, i = 1 is 1901, i=121 is 2021
+for (i in 1:nrow(droughtSA)) {
+      yr <- (droughtSA$Year[i]) - 1900
+      if (is.na(droughtSA$`Total Damages ('000 US$)`[i])) {
+            annual_damages_droughtSA[yr] <- annual_damages_droughtSA[yr] + 0
+      } else{
+            annual_damages_droughtSA[yr] <- annual_damages_droughtSA[yr] + (1000 * droughtSA$`Total Damages ('000 US$)`[i])
+      }
+}
+yr <- (1901:2021)
+damages_droughtSA <- data.frame(yr,annual_damages_droughtSA)
+ggplot(damages_droughtSA, aes(x = yr, y = (annual_damages_droughtSA/1e9))) +
+      geom_line() +
+      labs(x = "Year", y = "Damage from Droughts in Southern Africa (billions USD)") +
+      xlim(1975,2025) +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+
+
