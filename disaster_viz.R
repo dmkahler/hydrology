@@ -25,6 +25,21 @@ ggplot(disasters, aes(x = Year)) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 # Alternatively, use ggplot for imaging: https://ggplot2.tidyverse.org/reference/geom_histogram.html
 
+deaths <- disasters %>%
+      filter(Year <= 2013) %>%
+      group_by(Continent) %>%
+      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE))
+total_deaths <- disasters %>%
+      filter(Year <= 2013) %>%
+      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE))
+affected <- disasters %>%
+      filter(Year <= 2013) %>%
+      group_by(Continent) %>%
+      summarize(Affected = sum(`No Affected`, na.rm = TRUE))
+total_affected <- disasters %>%
+      filter(Year <= 2013) %>%
+      summarize(Affected = sum(`No Affected`, na.rm = TRUE))
+
 drought <- filter(disasters, `Disaster Type` == "Drought") %>% arrange(Year)
 h <- hist(drought$Year, breaks = (1900.5:2021.5))
 history <- data.frame(h$mids, h$counts)
@@ -57,9 +72,6 @@ damages_droughtSA <- data.frame(yr,annual_damages_droughtSA)
 ggplot(damages_droughtSA, aes(x = yr, y = (annual_damages_droughtSA/1e9))) +
       geom_line() +
       labs(x = "Year", y = "Damage from Droughts in Southern Africa (billions USD)") +
-      xlim(1975,2025) +
+      xlim(1950,2025) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-
-
-
 
