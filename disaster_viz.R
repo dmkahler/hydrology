@@ -171,6 +171,37 @@ sa.drought.damages <- droughtSA %>%
       summarize(Damages = 1e3 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) %>% # This is now in USD
       arrange(Year)
 
+# Short southern Africa summary table by year
+sa.drought <- data.frame(sa.drought.count$Year, sa.drought.count$n, sa.drought.deaths$Deaths, sa.drought.affected$Affected, (sa.drought.damages$Damages/1e9))
+sa.drought <- sa.drought %>%
+      rename(Year = sa.drought.count.Year, 
+             `# of events` = sa.drought.count.n, 
+             `# of people killed` = sa.drought.deaths.Deaths, 
+             `# of people affected` = sa.drought.affected.Affected, 
+             `Damage (Billions USD)` = X.sa.drought.damages.Damages.1e.09.)
+sa.drought %>% # mainly for review.
+      gt() %>% 
+      cols_align(
+            align = "left", columns = 1
+      ) %>% 
+      cols_align(
+            align = "right", columns = 2
+      ) %>% 
+      cols_align(
+            align = "right", columns = 3
+      ) %>% 
+      cols_align(
+            align = "right", columns = 4
+      ) %>% 
+      cols_align(
+            align = "right", columns = 5
+      ) %>% 
+      tab_header(
+            title = md("**Table 2a.** Effect of droughts in southern Africa, 1900-2021") 
+      ) %>% 
+      fmt_number(columns = 5, decimals = 4) %>% 
+      tab_source_note(md("*Data source:* EM-DAT: the International Disaster Database."))
+
 # Next, arrange in a table to plot
 yr <- (1901:2021)
 sa.drought.count.yr <- array(0, dim = c(4, length(yr)))
