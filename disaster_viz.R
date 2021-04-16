@@ -100,8 +100,20 @@ n.sum <- n.sum %>%
              `# of people killed` = n.deaths.Deaths, 
              `# of people affected` = n.affected.Affected, 
              `Damage (Billions USD)` = n.damages.Damages)
-n.sum %>%
-      gt() %>%
+# Brute force add a total row:
+t.n.events <- sum(n.sum$`# of events`) # We tried to write a loop; however, it wasn't many columns and we would have to reassign the data type for each element for proper display.
+t.n.deaths <- sum(n.sum$`# of people killed`)
+t.n.affected <- sum(n.sum$`# of people affected`)
+t.n.damage <- sum(n.sum$`Damage (Billions USD)`)
+n.total <- data.frame("Total", t.n.events, t.n.deaths, t.n.affected, t.n.damage)
+names(n.total) <- names(n.sum)
+n.sum <- rbind(n.sum, n.total)
+n.sum %>% 
+      gt() %>% 
+#      summary_rows(                    # This will add a total row, but it puts the total in a new colunn to the left of Continent: strange.
+#            columns = c(2, 3, 4, 5), 
+#            fns = list(Total = "sum")
+#      ) %>%
       cols_align(
             align = "left", columns = 1
       ) %>% 
@@ -138,24 +150,101 @@ droughtSA <- filter(disasters, `Disaster Type` == "Drought") %>%
 h <- hist(droughtSA$Year, breaks = (1900.5:2021.5))
 historySA <- data.frame(h$mids, h$counts)
 ggplot(historySA, aes(x = h.mids, y = h.counts)) +
-      geom_line() +
+      geom_bar(stat = "identity", fill = "steelblue") +
       labs(x = "Year", y = "Number of Droughts in Southern Africa") +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
-annual_damages_droughtSA <- array(0, dim = 121) # the array made such that the index is the year, i = 1 is 1901, i=121 is 2021
-for (i in 1:nrow(droughtSA)) {
-      yr <- (droughtSA$Year[i]) - 1900
-      if (is.na(droughtSA$`Total Damages ('000 US$)`[i])) {
-            annual_damages_droughtSA[yr] <- annual_damages_droughtSA[yr] + 0
-      } else{
-            annual_damages_droughtSA[yr] <- annual_damages_droughtSA[yr] + (1000 * droughtSA$`Total Damages ('000 US$)`[i])
-      }
-}
+# Let's take a look at using dplyr to reduce these data:
+sa.drought.count <- droughtSA %>% 
+      count(Year) %>% 
+      arrange(Year)
+sa.drought.deaths <- droughtSA %>% 
+      group_by(Year) %>%
+      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE)) %>%
+      arrange(Year)
+sa.drought.affected <- droughtSA %>% 
+      group_by(Year) %>%
+      summarize(Affected = sum(`Total Affected`, na.rm = TRUE)) %>%
+      arrange(Year)
+sa.drought.damages <- droughtSA %>% 
+      group_by(Year) %>%
+      summarize(Damages = 1e3 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) %>% # This is now in USD
+      arrange(Year)
+
+# Next, arrange in a table to plot
 yr <- (1901:2021)
-damages_droughtSA <- data.frame(yr,annual_damages_droughtSA)
-ggplot(damages_droughtSA, aes(x = yr, y = (annual_damages_droughtSA/1e9))) +
+sa.drought.count.yr <- array(0, dim = c(4, length(yr)))
+sa.drought.deaths.yr <- array(0, dim = length(yr))
+sa.drought.affected.yr <- array(0, dim = length(yr))
+sa.drought.damages.yr <- array(0, dim = length(yr))
+for (i in 1:nrow(sa.drought.count)) {
+      sa.drought.count.yr[(sa.drought.count$Year[i]-1900)] <- sa.drought.count$n[i]
+}
+for (i in 1:nrow(sa.drought.deaths)) { # These should be able to be run off the same loop; however, this is done in case there is a missing value somewhere that would cause a mismatch.
+      sa.drought.deaths.yr[(sa.drought.deaths$Year[i]-1900)] <- sa.drought.deaths$Deaths[i]
+}
+for (i in 1:nrow(sa.drought.affected)) {
+      sa.drought.affected.yr[(sa.drought.affected$Year[i]-1900)] <- sa.drought.affected$Affected[i]
+}
+for (i in 1:nrow(sa.drought.damages)) {
+      sa.drought.damages.yr[(sa.drought.damages$Year[i]-1900)] <- (sa.drought.damages$Damages[i]/1e9) # Now, the values are presented as billion USD.  This is for plotting.
+}
+
+sa.drought.yr <- data.frame(yr,sa.drought.count.yr, sa.drought.deaths.yr, sa.drought.affected.yr, sa.drought.damages.yr)
+sa.drought.yr <- sa.drought.yr %>%
+      rename(Year = yr, 
+             `# of events` = sa.drought.count.yr, 
+             `# of people killed` = sa.drought.deaths.yr, 
+             `# of people affected` = sa.drought.affected.yr, 
+             `Damage (Billions USD)` = sa.drought.damages.yr)
+sa.drought.yr %>% # mainly for review.
+      gt() %>% 
+      cols_align(
+            align = "left", columns = 1
+      ) %>% 
+      cols_align(
+            align = "right", columns = 2
+      ) %>% 
+      cols_align(
+            align = "right", columns = 3
+      ) %>% 
+      cols_align(
+            align = "right", columns = 4
+      ) %>% 
+      cols_align(
+            align = "right", columns = 5
+      ) %>% 
+      tab_header(
+            title = md("**Table 2.** Effect of droughts in southern Africa, 1900-2021") 
+      ) %>% 
+      fmt_number(columns = 5, decimals = 4) %>% 
+      tab_source_note(md("*Data source:* EM-DAT: the International Disaster Database."))
+
+# Renaming columns for plotting - ease of calling data
+sa.drought.yr <- sa.drought.yr %>%
+      rename(yr = Year, 
+             n = `# of events`, 
+             deaths = `# of people killed`, 
+             affected = `# of people affected`, 
+             damage9 = `Damage (Billions USD)`)
+ggplot(sa.drought.yr, aes(x = yr, y = n)) +
       geom_bar(stat = "identity", fill = "steelblue") +
-      labs(x = "Year", y = "Damage from Droughts in Southern Africa (billions USD)") +
+      labs(x = "Year", y = "Number of Droughts in Southern Africa") +
+      xlim(1950,2025) +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+ggplot(sa.drought.yr, aes(x = yr, y = deaths)) +
+      geom_bar(stat = "identity", fill = "steelblue") +
+      labs(x = "Year", y = "Deaths from Droughts in Southern Africa") +
+      xlim(1950,2025) +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+ggplot(sa.drought.yr, aes(x = yr, y = (affected/1e6))) +
+      geom_bar(stat = "identity", fill = "steelblue") +
+      labs(x = "Year", y = "Affected by Droughts in Southern Africa (Million people)") +
+      xlim(1950,2025) +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+ggplot(sa.drought.yr, aes(x = yr, y = damage9)) +
+      geom_bar(stat = "identity", fill = "steelblue") +
+      labs(x = "Year", y = "Damage from Droughts in Southern Africa (Billions USD)") +
       xlim(1950,2025) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
