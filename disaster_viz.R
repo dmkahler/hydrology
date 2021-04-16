@@ -2,6 +2,7 @@ library(readr)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(gt) # used for table export.  For more: https://blog.rstudio.com/2020/04/08/great-looking-tables-gt-0-2/ 
 
 # This program will download and parse disaster data from EM-DAT
 
@@ -51,8 +52,7 @@ drought <- filter(disasters, `Disaster Type` == "Drought") %>% arrange(Year)
 # There are several mismatches: Americas - events, Africa and Asia - no. of deaths (Asia difference is big), all except Oceania - no. affected, Asia and Oceania - Damage
 d.events <- drought %>%
       filter(Year <= 2013) %>%
-      group_by(Continent) %>%
-      summarize(Events = length(Continent)) %>%
+      count(Continent) %>% # had used length, but this is more concise.  See: https://stat545.com/dplyr-single.html 
       arrange(as.character(Continent)) # the Continent list must be a character array, not a factor, to be alphabetized
 d.deaths <- drought %>%
       filter(Year <= 2013) %>%
@@ -69,8 +69,59 @@ d.damages <- drought %>%
       group_by(Continent) %>%
       summarize(Damages = 1e-6 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) %>% # NOTE: I have changed this to billions USD, it is no longer thousands of dollars.
       arrange(as.character(Continent))
-d.sum <- data.frame(d.events$Continent, d.events$Events, d.deaths$Deaths, d.affected$Affected, d.damages$Damages)
+d.sum <- data.frame(d.events$Continent, d.events$n, d.deaths$Deaths, d.affected$Affected, d.damages$Damages)
+d.sum <- d.sum %>%
+      rename(Continant = d.events.Continent, 
+             `# of events` = d.events.n, 
+             `# of people killed` = d.deaths.Deaths, 
+             `# of people affected` = d.affected.Affected, 
+             `Damage (Billions USD)` = d.damages.Damages)
 
+# New table, with all data, 1900-2021
+n.events <- drought %>%
+      count(Continent) %>% # had used length, but this is more concise.  See: https://stat545.com/dplyr-single.html 
+      arrange(as.character(Continent)) # the Continent list must be a character array, not a factor, to be alphabetized
+n.deaths <- drought %>%
+      group_by(Continent) %>%
+      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE)) %>%
+      arrange(as.character(Continent))
+n.affected <- drought %>%
+      group_by(Continent) %>%
+      summarize(Affected = sum(as.numeric(`No Affected`), na.rm = TRUE)) %>%
+      arrange(as.character(Continent))
+n.damages <- drought %>%
+      group_by(Continent) %>%
+      summarize(Damages = 1e-6 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) %>% # NOTE: I have changed this to billions USD, it is no longer thousands of dollars.
+      arrange(as.character(Continent))
+n.sum <- data.frame(n.events$Continent, n.events$n, n.deaths$Deaths, n.affected$Affected, n.damages$Damages)
+n.sum <- n.sum %>%
+      rename(Continant = n.events.Continent, 
+             `# of events` = n.events.n, 
+             `# of people killed` = n.deaths.Deaths, 
+             `# of people affected` = n.affected.Affected, 
+             `Damage (Billions USD)` = n.damages.Damages)
+n.sum %>%
+      gt() %>%
+      cols_align(
+            align = "left", columns = 1
+      ) %>% 
+      cols_align(
+            align = "right", columns = 2
+      ) %>% 
+      cols_align(
+            align = "right", columns = 3
+      ) %>% 
+      cols_align(
+            align = "right", columns = 4
+      ) %>% 
+      cols_align(
+            align = "right", columns = 5
+      ) %>% 
+      tab_header(
+            title = md("**Table 1.** Overview of droughts and their impact, 1900-2021") 
+      ) %>% 
+      fmt_number(columns = 5, decimals = 4) %>% 
+      tab_source_note(md("*Data source:* EM-DAT: the International Disaster Database."))
 
 # still on droughts
 h <- hist(drought$Year, breaks = (1900.5:2021.5))
@@ -80,6 +131,7 @@ ggplot(history, aes(x = h.mids, y = h.counts)) +
       labs(x = "Year", y = "Number of Global Droughts") +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
+# Let's look at southern Africa (REGIONAL)
 droughtSA <- filter(disasters, `Disaster Type` == "Drought") %>% 
       filter(Region == "Southern Africa") %>%
       arrange(Year)
