@@ -2,7 +2,6 @@ library(readr)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(lemon) # this is added for table outputs.
 
 # This program will download and parse disaster data from EM-DAT
 
@@ -54,31 +53,24 @@ d.events <- drought %>%
       filter(Year <= 2013) %>%
       group_by(Continent) %>%
       summarize(Events = length(Continent)) %>%
-      arrange(as.character(Continent))
-d.events$Continent <- as.character(d.events$Continent) # the Continent list must be a character array, not a factor, to be alphabetized
-d.events <- d.events[order(d.events$Continent),] # this command alphabetizes, to ensure every output is in the same order
+      arrange(as.character(Continent)) # the Continent list must be a character array, not a factor, to be alphabetized
 d.deaths <- drought %>%
       filter(Year <= 2013) %>%
       group_by(Continent) %>%
-      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE))
-d.deaths$Continent <- as.character(d.deaths$Continent)
-d.deaths <- d.deaths[order(d.deaths$Continent),]
+      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE)) %>%
+      arrange(as.character(Continent))
 d.affected <- drought %>%
       filter(Year <= 2013) %>%
       group_by(Continent) %>%
-      summarize(Affected = sum(`No Affected`, na.rm = TRUE))
-d.affected$Continent <- as.character(d.affected$Continent)
-d.affected <- d.affected[order(d.affected$Continent),]
+      summarize(Affected = sum(`No Affected`, na.rm = TRUE)) %>%
+      arrange(as.character(Continent))
 d.damages <- drought %>%
       filter(Year <= 2013) %>%
       group_by(Continent) %>%
-      summarize(Damages = 1e-6 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) # NOTE: I have changed this to billions USD, it is no longer thousands of dollars.
-d.damages$Continent <- as.character(d.damages$Continent)
-d.damages <- d.damages[order(d.damages$Continent),]
+      summarize(Damages = 1e-6 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) %>% # NOTE: I have changed this to billions USD, it is no longer thousands of dollars.
+      arrange(as.character(Continent))
 d.sum <- data.frame(d.events$Continent, d.events$Events, d.deaths$Deaths, d.affected$Affected, d.damages$Damages)
-```{r caption = "Overview of the number of droughts and their impact across the world: 1900-2013", render = lemon_print}
-d.sum
-```
+
 
 # still on droughts
 h <- hist(drought$Year, breaks = (1900.5:2021.5))
