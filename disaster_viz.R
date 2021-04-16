@@ -2,6 +2,7 @@ library(readr)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(lemon) # this is added for table outputs.
 
 # This program will download and parse disaster data from EM-DAT
 
@@ -25,22 +26,61 @@ ggplot(disasters, aes(x = Year)) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 # Alternatively, use ggplot for imaging: https://ggplot2.tidyverse.org/reference/geom_histogram.html
 
-deaths <- disasters %>%
+# Table data:
+# All disasters:
+g.events <- disasters %>%
+      filter(Year <= 2013) %>%
+      group_by(Continent) %>%
+      summarize(Events = length(Continent)) # The use of factors (i.e., Contenent) requires the use of length, not count, tally, or n.
+g.deaths <- disasters %>%
       filter(Year <= 2013) %>%
       group_by(Continent) %>%
       summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE))
-total_deaths <- disasters %>%
-      filter(Year <= 2013) %>%
-      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE))
-affected <- disasters %>%
+g.affected <- disasters %>%
       filter(Year <= 2013) %>%
       group_by(Continent) %>%
       summarize(Affected = sum(`No Affected`, na.rm = TRUE))
-total_affected <- disasters %>%
+g.damages <- disasters %>%
       filter(Year <= 2013) %>%
-      summarize(Affected = sum(`No Affected`, na.rm = TRUE))
+      group_by(Continent) %>%
+      summarize(Affected = 1e-6 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) # NOTE: I have changed this to billions USD, it is no longer thousands of dollars.
 
+# Just droughts:
 drought <- filter(disasters, `Disaster Type` == "Drought") %>% arrange(Year)
+
+# Begining with 1900-2013 to verify with example table: https://duq.box.com/shared/static/33r8abqvd8di5pre5lwmfb6uxrsdpfl3.png
+# There are several mismatches: Americas - events, Africa and Asia - no. of deaths (Asia difference is big), all except Oceania - no. affected, Asia and Oceania - Damage
+d.events <- drought %>%
+      filter(Year <= 2013) %>%
+      group_by(Continent) %>%
+      summarize(Events = length(Continent)) %>%
+      arrange(as.character(Continent))
+d.events$Continent <- as.character(d.events$Continent) # the Continent list must be a character array, not a factor, to be alphabetized
+d.events <- d.events[order(d.events$Continent),] # this command alphabetizes, to ensure every output is in the same order
+d.deaths <- drought %>%
+      filter(Year <= 2013) %>%
+      group_by(Continent) %>%
+      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE))
+d.deaths$Continent <- as.character(d.deaths$Continent)
+d.deaths <- d.deaths[order(d.deaths$Continent),]
+d.affected <- drought %>%
+      filter(Year <= 2013) %>%
+      group_by(Continent) %>%
+      summarize(Affected = sum(`No Affected`, na.rm = TRUE))
+d.affected$Continent <- as.character(d.affected$Continent)
+d.affected <- d.affected[order(d.affected$Continent),]
+d.damages <- drought %>%
+      filter(Year <= 2013) %>%
+      group_by(Continent) %>%
+      summarize(Damages = 1e-6 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) # NOTE: I have changed this to billions USD, it is no longer thousands of dollars.
+d.damages$Continent <- as.character(d.damages$Continent)
+d.damages <- d.damages[order(d.damages$Continent),]
+d.sum <- data.frame(d.events$Continent, d.events$Events, d.deaths$Deaths, d.affected$Affected, d.damages$Damages)
+```{r caption = "Overview of the number of droughts and their impact across the world: 1900-2013", render = lemon_print}
+d.sum
+```
+
+# still on droughts
 h <- hist(drought$Year, breaks = (1900.5:2021.5))
 history <- data.frame(h$mids, h$counts)
 ggplot(history, aes(x = h.mids, y = h.counts)) +
@@ -70,7 +110,7 @@ for (i in 1:nrow(droughtSA)) {
 yr <- (1901:2021)
 damages_droughtSA <- data.frame(yr,annual_damages_droughtSA)
 ggplot(damages_droughtSA, aes(x = yr, y = (annual_damages_droughtSA/1e9))) +
-      geom_line() +
+      geom_bar(stat = "identity", fill = "steelblue") +
       labs(x = "Year", y = "Damage from Droughts in Southern Africa (billions USD)") +
       xlim(1950,2025) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
