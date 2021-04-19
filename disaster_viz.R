@@ -4,7 +4,8 @@ library(dplyr)
 library(tidyr)
 library(gt) # used for table export.  For more: https://blog.rstudio.com/2020/04/08/great-looking-tables-gt-0-2/ 
 
-# This program will download and parse disaster data from EM-DAT
+# This program will download and parse disaster data from EM-DAT.  Data available for registered users
+# at: https://public.emdat.be/
 
 # Limpopo Resilience Lab
 # This work was supported by the United States Agency for International Development, Southern Africa Regional 
