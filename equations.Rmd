@@ -83,3 +83,81 @@ c_3 = \frac{\lambda_1 \lambda_2 \ldots \lambda_{n-1}}{(\lambda_1 -\lambda_n) (\l
 \log([\mathrm{^{226}Ra}]) = 0.6521 \times \log(\mathrm{[Cl]}) - 0.8448
 \end{equation}
 
+#### 7.1
+\begin{equation}
+M_0 = G \bar{d} A
+\end{equation}
+
+#### 7.2
+\begin{equation}
+M_W = \frac{2}{3} \log_{10}M_0 - 6.03
+\end{equation}
+
+The original equation used a slanted fraction bar to express the two-thirds.  This is not available in R Markdown.  With a different TeX platform, \sfrac may work as part of the xfrac package.
+
+#### 7.3
+\begin{equation}
+M_L = \log_{10}A + 2.56 \log_{10} \Delta - 1.67
+\end{equation}
+
+#### 7.4
+\begin{equation}
+\log_{10} N = a - b M, M \geq M_C
+\end{equation}
+
+#### 7.5
+\begin{equation}
+\sigma (x) = \begin{bmatrix} \sigma_{11} & \sigma_{12} & \sigma_{13} \\ \sigma_{21} & \sigma_{22} & \sigma_{23} \\ \sigma_{31} & \sigma_{32} & \sigma_{33} \end{bmatrix}
+\end{equation}
+
+#### 7.6
+Check prime usage:
+\begin{equation}
+S_V(z) = \int_0^{z} \rho (z^\prime) g d z^\prime
+\end{equation}
+
+#### 7.7
+\begin{equation}
+\sigma_n^\prime = \sigma_n - \alpha P
+\end{equation}
+
+#### 7.8
+\begin{equation}
+\mathrm{\bf{T}} = \mathrm{\bf{\sigma \hat{n}}}
+\end{equation}
+
+#### 7.9
+\begin{equation}
+\lvert \tau \rvert = C + \mu \sigma_N^\prime
+\end{equation}
+
+#### 7.10
+\begin{equation}
+\sigma_1 = \lbrack \sqrt{\mu^2 + 1} + \mu \rbrack^2 \sigma_3 + 2 C \lbrack \sqrt{\mu^2 + 1} + \mu \rbrack
+\end{equation}
+
+#### 7.11
+Check *max* subscript versus superscript, check scalar product:
+\begin{equation}
+M_0^{max} = G \cdot V
+\end{equation}
+
+#### 7.12
+\begin{equation}
+M_{max} = M_C + \frac{1}{b} \log_{10} N
+\end{equation}
+
+#### 7.13
+\begin{equation}
+\Sigma = \log_{10} N - \log_{10} V + b M_C
+\end{equation}
+
+#### 7.14
+\begin{equation}
+M_{max} = \frac{1}{b} (\Sigma + \log_{10} V)
+\end{equation}
+
+The following paragraph uses some in-text equations, which can be rendered $\Delta M \sim 0.4$ and $M_0^{max} \propto V^{\frac{2}{3b}}$.  Here, it may be best to use the horizontal superscript fraction to avoid ambiguity with the position of the *b*.  Additionally, $M_0^{max} \propto V^{\frac{2}{3}}$ and $M_0^{max}$, although, these may be able to be rendered in Word.
+
+
+
