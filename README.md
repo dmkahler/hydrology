@@ -1,4 +1,4 @@
-# Engineering and Hydrology Support  
+# Hydrology and Water Resources Engineering Support  
 This respository is for useful materials in water resources engineering, hydrology, or education.  
 
 For more information, contact david.m.kahler@gmail.com.  
