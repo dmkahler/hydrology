@@ -1,0 +1,85 @@
+---
+title: "Equations"
+author: "David Kahler"
+date: "4/28/2021"
+output: html_document
+header-includes: 
+      \usepackage{amsmath}
+      \usepackage{isotope}
+      \usepackage{pdfpages}
+      \usepackage{pdflatex}
+---
+
+# R Markdown with Equations in $\LaTeX$
+
+The purpose of this document is to demonstrate the utility of R Markdown in the preparation of documents.  Recently, a colleague came to me with a formatting problem: a book publisher was requiring tue use of $\LaTeX$ or MathType.  I recommended $\LaTeX$ in R Markdown.  
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.  
+
+To check the rendering of equations (the TeX code is all you need to send to the publisher), make sure to add:   
+```{r eval=FALSE}
+\usepackage{amsmath}  
+\usepackage{isotope}  
+```
+to your R Markdown header.  The amsmath package contains most all of the $\LaTeX$ commands and the isotope package is helpful for chemical equations.
+
+## Writing Equations  
+For inline equations, you start and end the $\LaTeX$ string with $.  To enter a centered equation, start with:  
+```{r eval=FALSE}
+\begin{equation}
+N = N_0 e^{-\lambda t}
+\end{equation}
+```
+
+### Example Equations
+#### 8.1
+\begin{equation}
+N = N_0 e^{-\lambda t}
+\end{equation}
+
+#### 8.2
+\begin{equation}
+\label{eq:8.2}
+\mathrm{^{226}_{88}Ra} \rightarrow \mathrm{^{222}_{86}Rn} + \mathrm{^{4}_{2}He^{2+}} + \gamma + hv  
+\end{equation}
+
+#### 8.3
+\begin{equation}
+\mathrm{^{228}_{88}Ra} \rightarrow \mathrm{^{228}_{89}Ac} + \mathrm{e^{-}} + \gamma + hv  
+\end{equation}
+
+#### 8.4
+\begin{equation}
+A_n = \lambda_n N_n
+\end{equation}
+
+#### 8.5
+\begin{equation}
+N_n = c_{1} e^{-\lambda_1 t} + c_{2} e^{-\lambda_2 t} + c_{3} e^{-\lambda_3 t} + \ldots + c_{n} e^{-\lambda_n t}
+\end{equation}
+
+#### 8.6
+\begin{equation}
+c_1 = \frac{\lambda_1 \lambda_2 \ldots \lambda_{n-1}}{(\lambda_2 -\lambda_1) (\lambda_3 -\lambda_1) (\lambda_n \lambda_1)} N^{0}_{1}
+\end{equation}
+
+#### 8.7
+\begin{equation}
+c_2 = \frac{\lambda_1 \lambda_2 \ldots \lambda_{n-1}}{(\lambda_1 -\lambda_2) (\lambda_3 -\lambda_2) (\lambda_n \lambda_2)} N^{0}_{1}
+\end{equation}
+
+#### 8.8
+\begin{equation}
+c_3 = \frac{\lambda_1 \lambda_2 \ldots \lambda_{n-1}}{(\lambda_1 -\lambda_n) (\lambda_2 -\lambda_n) (\lambda_{n-1} -\lambda_n)} N^{0}_{1}
+\end{equation}
+
+#### 8.9
+\begin{equation}
+\log([\mathrm{^{226}Ra}]) = 1.3536 \times \log({TDS}) - 4.4513
+\end{equation}
+
+#### 8.10
+\begin{equation}
+\log([\mathrm{^{226}Ra}]) = 0.6521 \times \log(\mathrm{[Cl]}) - 0.8448
+\end{equation}
+
