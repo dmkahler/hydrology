@@ -1,0 +1,227 @@
+---
+title: "Global Disaster Visualization"
+author: "David Kahler"
+output:
+  html_document:
+    df_print: paged
+header-includes: \usepackage{amsmath}
+---
+
+```{r echo=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(gt)
+
+# Static data location - data available via Box link, service courtesy of Duquesne University.
+disasters <- read_csv("https://duq.box.com/shared/static/48g71l89th4prmlnmp5wupkksaf29gzy.csv", skip = 6, col_names = TRUE, col_types = "ciifffffcfffffccfffccnnfcccciiiiiiiiiiinnnn")
+s <- (min(disasters$Year))
+e <- (max(disasters$Year))
+```
+
+Data from the EM-DAT database from `r s` to `r e` were analyzed.  Of particular interest is drought data in southern Africa.  Data available for registered users at: [https://public.emdat.be/](https://public.emdat.be/).  
+
+# Global Disasters
+The EM-DAT database reports on natural, technologic, and complex disasters.  Here, we consider global natural disasters (Figure 1).  This is done in number of disasters and various measures of impact of these disasters.  
+```{r echo=FALSE}
+ggplot(disasters, aes(x = Year)) + 
+      geom_histogram(binwidth = 1, fill = "steelblue") +
+      labs(x = "Year", y = "Number of Global Disasters") +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+# Alternatively, use ggplot for imaging: https://ggplot2.tidyverse.org/reference/geom_histogram.html
+```
+*Figure 1*: The number of disasters recorded around the globe from 1901.  
+
+# Droughts
+```{r echo=FALSE}
+# Just droughts:
+drought <- filter(disasters, `Disaster Type` == "Drought") %>% arrange(Year)
+
+# New table, with all data, 1900-2021
+n.events <- drought %>%
+      count(Continent) %>%  
+      arrange(as.character(Continent))
+n.deaths <- drought %>%
+      group_by(Continent) %>%
+      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE)) %>%
+      arrange(as.character(Continent))
+n.affected <- drought %>%
+      group_by(Continent) %>%
+      summarize(Affected = sum(as.numeric(`No Affected`), na.rm = TRUE)) %>%
+      arrange(as.character(Continent))
+n.damages <- drought %>%
+      group_by(Continent) %>%
+      summarize(Damages = 1e-6 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) %>% # NOTE: Now billions USD.
+      arrange(as.character(Continent))
+n.sum <- data.frame(n.events$Continent, n.events$n, n.deaths$Deaths, n.affected$Affected, n.damages$Damages)
+n.sum <- n.sum %>%
+      rename(Continant = n.events.Continent, 
+             `# of events` = n.events.n, 
+             `# of people killed` = n.deaths.Deaths, 
+             `# of people affected` = n.affected.Affected, 
+             `Damage (Billions USD)` = n.damages.Damages)
+# Brute force add a total row:
+t.n.events <- sum(n.sum$`# of events`) 
+t.n.deaths <- sum(n.sum$`# of people killed`)
+t.n.affected <- sum(n.sum$`# of people affected`)
+t.n.damage <- sum(n.sum$`Damage (Billions USD)`)
+n.total <- data.frame("Total", t.n.events, t.n.deaths, t.n.affected, t.n.damage)
+names(n.total) <- names(n.sum)
+n.sum <- rbind(n.sum, n.total)
+n.sum %>% 
+      gt() %>% 
+      cols_align(
+            align = "left", columns = 1
+      ) %>% 
+      cols_align(
+            align = "right", columns = 2
+      ) %>% 
+      cols_align(
+            align = "right", columns = 3
+      ) %>% 
+      cols_align(
+            align = "right", columns = 4
+      ) %>% 
+      cols_align(
+            align = "right", columns = 5
+      ) %>% 
+      tab_header(
+            title = md("**Table 1.** Overview of droughts and their impact, 1900-2021") 
+      ) %>% 
+      fmt_number(columns = 5, decimals = 4) %>% 
+      tab_source_note(md("*Data source:* EM-DAT: the International Disaster Database."))
+```
+
+
+```{r include=FALSE}
+# still on droughts
+h <- hist(drought$Year, breaks = (1900.5:2021.5))
+history <- data.frame(h$mids, h$counts)
+```
+```{r echo=FALSE}
+ggplot(drought, aes(x = Year)) +
+      geom_histogram(binwidth = 1, fill = "steelblue") +
+      labs(x = "Year", y = "Number of Global Droughts") +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+```
+*Figure 2*: Global recorded droughts per year.
+
+## Droughts in Southern Africa
+```{r include=FALSE}
+# Let's look at southern Africa (REGIONAL)
+droughtSA <- filter(disasters, `Disaster Type` == "Drought") %>% 
+      filter(Region == "Southern Africa") %>%
+      arrange(Year)
+```
+```{r echo=FALSE}
+sa.drought.count <- droughtSA %>% 
+      count(Year) %>% 
+      arrange(Year)
+sa.drought.deaths <- droughtSA %>% 
+      group_by(Year) %>%
+      summarize(Deaths = sum(`Total Deaths`, na.rm = TRUE)) %>%
+      arrange(Year)
+sa.drought.affected <- droughtSA %>% 
+      group_by(Year) %>%
+      summarize(Affected = sum(`Total Affected`, na.rm = TRUE)) %>%
+      arrange(Year)
+sa.drought.damages <- droughtSA %>% 
+      group_by(Year) %>%
+      summarize(Damages = 1e3 * sum(`Total Damages ('000 US$)`, na.rm = TRUE)) %>% # This is now in USD
+      arrange(Year)
+
+# Short southern Africa summary table by year
+sa.drought <- data.frame(sa.drought.count$Year, sa.drought.count$n, sa.drought.deaths$Deaths, sa.drought.affected$Affected, (sa.drought.damages$Damages/1e9))
+sa.drought <- sa.drought %>%
+      rename(Year = sa.drought.count.Year, 
+             `# of events` = sa.drought.count.n, 
+             `# of people killed` = sa.drought.deaths.Deaths, 
+             `# of people affected` = sa.drought.affected.Affected, 
+             `Damage (Billions USD)` = X.sa.drought.damages.Damages.1e.09.)
+sa.drought %>% # mainly for review.
+      gt() %>% 
+      cols_align(
+            align = "left", columns = 1
+      ) %>% 
+      cols_align(
+            align = "right", columns = 2
+      ) %>% 
+      cols_align(
+            align = "right", columns = 3
+      ) %>% 
+      cols_align(
+            align = "right", columns = 4
+      ) %>% 
+      cols_align(
+            align = "right", columns = 5
+      ) %>% 
+      tab_header(
+            title = md("**Table 2a.** Effect of droughts in southern Africa, 1900-2021") 
+      ) %>% 
+      fmt_number(columns = 5, decimals = 4) %>% 
+      tab_source_note(md("*Data source:* EM-DAT: the International Disaster Database."))
+```
+
+```{r echo=FALSE}
+# Next, arrange in a table to plot
+yr <- (1901:2021)
+sa.drought.count.yr <- array(0, dim = c(length(yr)))
+sa.drought.deaths.yr <- array(0, dim = length(yr))
+sa.drought.affected.yr <- array(0, dim = length(yr))
+sa.drought.damages.yr <- array(0, dim = length(yr))
+for (i in 1:nrow(sa.drought.count)) {
+      sa.drought.count.yr[(sa.drought.count$Year[i]-1900)] <- sa.drought.count$n[i]
+}
+for (i in 1:nrow(sa.drought.deaths)) { # These should be able to be run off the same loop; however, this is done in case there is a missing value somewhere that would cause a mismatch.
+      sa.drought.deaths.yr[(sa.drought.deaths$Year[i]-1900)] <- sa.drought.deaths$Deaths[i]
+}
+for (i in 1:nrow(sa.drought.affected)) {
+      sa.drought.affected.yr[(sa.drought.affected$Year[i]-1900)] <- sa.drought.affected$Affected[i]
+}
+for (i in 1:nrow(sa.drought.damages)) {
+      sa.drought.damages.yr[(sa.drought.damages$Year[i]-1900)] <- (sa.drought.damages$Damages[i]/1e9) # Now, the values are presented as billion USD.  This is for plotting.
+}
+
+sa.drought.yr <- data.frame(yr,sa.drought.count.yr, sa.drought.deaths.yr, sa.drought.affected.yr, sa.drought.damages.yr)
+sa.drought.yr <- sa.drought.yr %>%
+      rename(Year = yr, 
+             n = sa.drought.count.yr, 
+             deaths = sa.drought.deaths.yr, 
+             affected = sa.drought.affected.yr, 
+             damage9 = sa.drought.damages.yr)
+ggplot(sa.drought.yr, aes(x = yr, y = n)) +
+      geom_bar(stat = "identity", fill = "steelblue") +
+      labs(x = "Year", y = "Number of Droughts in Southern Africa") +
+      xlim(1950,2025) +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+```
+*Figure 3*: Number of droughts in southern Africa each year recorded.  
+
+```{r echo=FALSE}
+ggplot(sa.drought.yr, aes(x = yr, y = deaths)) +
+      geom_bar(stat = "identity", fill = "steelblue") +
+      labs(x = "Year", y = "Deaths from Droughts in Southern Africa") +
+      xlim(1950,2025) +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+```
+*Figure 4*: Total deaths from drought recorded.  
+```{r echo=FALSE}
+ggplot(sa.drought.yr, aes(x = yr, y = (affected/1e6))) +
+      geom_bar(stat = "identity", fill = "steelblue") +
+      labs(x = "Year", y = "Affected by Droughts in Southern Africa (Million people)") +
+      xlim(1950,2025) +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+```
+*Figure 5*: Number of people affected by drought in millions of people.  
+```{r echo=FALSE}
+ggplot(sa.drought.yr, aes(x = yr, y = damage9)) +
+      geom_bar(stat = "identity", fill = "steelblue") +
+      labs(x = "Year", y = "Damage from Droughts in Southern Africa (Billions USD)") +
+      xlim(1950,2025) +
+      theme(panel.background = element_blank(), panel.border = element_rect(fill = NA), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+```
+*Figure 6*: Damage from drought accounted in U.S. Dollars (USD).  
+
+## Limpopo Resilience Lab  
+This work was supported by the United States Agency for International Development, Southern Africa Regional Mission, Fixed Amount Award 72067419FA00001. This work reflects the work of the authors and does not necessarily reflect the views of USAID or the United States Government.  
