@@ -157,7 +157,11 @@ M_{max} = M_C + \frac{1}{b} \log_{10} N
 M_{max} = \frac{1}{b} (\Sigma + \log_{10} V)
 \end{equation}
 
-The following paragraph uses some in-text equations, which can be rendered $\Delta M \sim 0.4$ and $M_0^{max} \propto V^{\frac{2}{3b}}$.  Here, it may be best to use the horizontal superscript fraction to avoid ambiguity with the position of the *b*.  Additionally, $M_0^{max} \propto V^{\frac{2}{3}}$ and $M_0^{max}$, although, these may be able to be rendered in Word.
+The following paragraph uses some in-text equations, which can be rendered $\Delta M \sim 0.4$ and $M_0^{max} \propto V^{\frac{2}{3b}}$.  Here, it may be best to use the horizontal superscript fraction to avoid ambiguity with the position of the *b*.  Additionally, $M_0^{max} \propto V^{\frac{2}{3}}$ and $M_0^{max}$, although, these may be able to be rendered in Word.  
 
-
-
+Another use of $\TeX$ is with the library, latex2exp for labeling plots in R and RStudio.  Here, some conventions need to be explained.  First, in some versions of R, the syntax will use a double-back-slash for symbols; for example:
+```{r}
+library(latex2exp)
+x <- rnorm(100)
+plot(x, xlab = "random numbers", ylab = TeX('$PM_{2.5}(\\mu g/l)$'))
+```
