@@ -11,16 +11,16 @@ beanplot(pH, xlab = "pH")
 beanplot(cond, xlab = "Conductivity", ylab = TeX('$\\mu$S/cm'))
 beanplot(f, xlab = "Fluoride", ylab = "mg/L")
 
-par(mfrow = c(3,1), mar = c(5,5,2,2))
-vioplot(pH, horizontal = TRUE, ylab = "pH")
-vioplot(cond, horizontal = TRUE, ylab = "Conductivity", xlab = TeX('$\\mu$S/cm'))
-vioplot(f, horizontal = TRUE, ylab = "Fluoride", xlab = "mg/L")
+par(mfrow = c(3,1), mar = c(5,5,2,2), cex.lab = 1.5)
+vioplot(pH, horizontal = TRUE, cex.names = 1.5, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, cex.sub = 1.5, names = "pH")
+vioplot(cond, horizontal = TRUE, cex.names = 1.5, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, cex.sub = 1.5, names = "Conductivity", xlab = TeX('$\\mu$S/cm'))
+vioplot(f, horizontal = TRUE, cex.names = 1.5, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, cex.sub = 1.5, names = "Fluoride", xlab = "mg/L")
 
 ecoli <- c(6,8,28,22,34,61,9,9,33,43,28,17,13,18,1,2,70,75)
 tc <- c(190,216,42,54,300,300,69,62,173,135,300,300,277,224,168,104,300,300)
 
-par(mfrow = c(2,1), mar = c(5,4,2,2))
-vioplot(ecoli, horizontal = TRUE, ylab = "E. coli")
-vioplot(tc, horizontal = TRUE, ylab = "Total Coliform", xlab = "CFU/100 mL")
+par(mfrow = c(2,1), mar = c(5,4,2,2), cex.lab = 1)
+vioplot(ecoli, horizontal = TRUE, names = "E. coli")
+vioplot(tc, horizontal = TRUE, names = "Total Coliform", xlab = "CFU/100 mL")
 
 
