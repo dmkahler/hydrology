@@ -19,7 +19,7 @@
 library(ggplot2)
 library(dplyr)
 library(rjson)
-# library(jsonlite)
+library(lubridate)
 library(RCurl)
 
 # The API information for Zentra Cloud is tied to my account and the device serial number&password (orange labels)
@@ -49,30 +49,35 @@ api_end <- URLencode(full_url)
 # https://www.r-bloggers.com/a-tiny-rcurl-headache/
 hydromet <- fromJSON(getURL(api_end, ssl.verifypeer = FALSE))
 # Save data to JSON data structure for backup -- TWO OPTIONS FOR WORKING DIRECTORY
-setwd("")
+setwd("") # Set your working directory - to save data
 # setwd("")
-site <- "Olkokola"
+site <- "siteName" # name your site - no spaces
 today <- Sys.Date()
 exportJSON <- toJSON(hydromet)
 save(exportJSON, file = paste0(site, "_", today, ".JSON", ""))
 rm(exportJSON)
 
+
+
+
+
+
 # Check data download
-tracker <- array(-99, dim=c(1,6))
-tracker[1,1] <- toString(as.POSIXlt(Sys.time(), "GMT")) # the current/download time in UTC
+tracker <- array("NA", dim=c(1,6))
+tracker[1,1] <- paste(as.character(as_datetime(now(), "UTC")), "UTC") # the current/download time in UTC
 tracker[1,2] <- (mrid+1) # record start reference
 begin <- hydromet$device$timeseries[[1]]$configuration$values[[1]][[1]] # first date/time in download, in seconds from 1970-01-01
-tracker[1,3] <- toString(as.POSIXct(begin), origin = "1970-01-01", tz = "GMT") # first date/time in download, in date format
+tracker[1,3] <- as.character(as_datetime(as_datetime(begin))) # first date/time in download, in date format
 num_val <- length(hydromet$device$timeseries[[1]]$configuration$values) # number of recordings
 tracker[1,4] <- num_val
 endd <- hydromet$device$timeseries[[1]]$configuration$values[[num_val]][[1]] # last date/time in download, in seconds from 1970-01-01
-tracker[1,5] <- toString(as.POSIXct(endd), origin = "1970-01-01", tz = "GMT") # last date/time in download, in date format
+tracker[1,5] <- as.character(as_datetime(as_datetime(endd))) # last date/time in download, in date format
 tracker[1,6] <- (mrid+num_val)
-# headers: NUM,DOWNLOAD_DATE_TIME,START_MRID,BEGIN_DATE_TIME,NUMBER_OF_RECORDS,LAST_MRID
+# headers: NUM,DOWNLOAD_DATE_TIME,START_MRID,BEGIN_DATE_TIME,NUMBER_OF_RECORDS,LAST_MRID  
 write.table(tracker, file = paste0(site, "_mrid.csv", ""), append = TRUE, sep = ",", dec = ".", col.names = FALSE)
 # Check number of recordings:
 print(paste0("Number of recordings: ", num_val, sep = ""))
-print(paste0("Number of time steps (inclusive): ", ((dur/900)+1)), sep = "") # 900 is # of seconds in a 15 minute interval, the plus one is to include the beginning step
+print(paste0("Number of time steps (inclusive): ", (((endd-begin)/900)+1)), sep = "") # 900 is # of seconds in a 15 minute interval, the plus one is to include the beginning step
 print("Check that these values are the same")
 print(paste0("End date and time: ", tracker[1,5], sep = "")) # end date/time in record
 print(paste0("Current date and time: ", tracker[1,1], sep = "")) # current date/time in record
