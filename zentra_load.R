@@ -67,11 +67,11 @@ tracker <- array("NA", dim=c(1,6))
 tracker[1,1] <- paste(as.character(as_datetime(now(), "UTC")), "UTC") # the current/download time in UTC
 tracker[1,2] <- (mrid+1) # record start reference
 begin <- hydromet$device$timeseries[[1]]$configuration$values[[1]][[1]] # first date/time in download, in seconds from 1970-01-01
-tracker[1,3] <- as.character(as_datetime(as_datetime(begin))) # first date/time in download, in date format
+tracker[1,3] <- paste(as.character(as_datetime(as_datetime(begin))), "UTC") # first date/time in download, in date format
 num_val <- length(hydromet$device$timeseries[[1]]$configuration$values) # number of recordings
 tracker[1,4] <- num_val
 endd <- hydromet$device$timeseries[[1]]$configuration$values[[num_val]][[1]] # last date/time in download, in seconds from 1970-01-01
-tracker[1,5] <- as.character(as_datetime(as_datetime(endd))) # last date/time in download, in date format
+tracker[1,5] <- paste(as.character(as_datetime(as_datetime(endd))), "UTC") # last date/time in download, in date format
 tracker[1,6] <- (mrid+num_val)
 # headers: NUM,DOWNLOAD_DATE_TIME,START_MRID,BEGIN_DATE_TIME,NUMBER_OF_RECORDS,LAST_MRID  
 write.table(tracker, file = paste0(site, "_mrid.csv", ""), append = TRUE, sep = ",", dec = ".", col.names = FALSE)
@@ -109,14 +109,14 @@ print("Check that the end time is not more than 24 hours before the current time
 # $unit          text
 # $error         logical: TRUE or FALSE
 # Preallocation:
-DATE <- array(-9999, dim = c(num_val,1)) # date and time in seconds from 00:00 01 Jan 1970, UTC; local time is SAST (UTC+2) or EAT (UTC+3)
+DATE <- array(-9999, dim = num_val) # date and time in seconds from 00:00 01 Jan 1970, UTC; local time is SAST (UTC+2) or EAT (UTC+3)
 YEAR <- DATE # year
 MNTH <- YEAR # month
 DAYN <- YEAR # day of month
 HOUR <- YEAR # hour
 MINU <- YEAR # minute
 PRCP <- YEAR # precipitation (mm)
-PRCPqc <- array(0, dim = c(num_val,1))
+PRCPqc <- array(0, dim = num_val)
 SRAD <- YEAR # solar radiation (W/m^2)
 SRADqc <- PRCPqc
 TEMP <- YEAR # air temperature (degrees C)
@@ -137,17 +137,16 @@ WDIRqc <- PRCPqc
 #CONDqc <- PRCPqc
 #TRBD <- YEAR
 #TRBDqc <- PRCPqc
-for (i in 560:num_val) {
-      DATE[i,1] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[1]][[1]]
-      dt1 <- as.POSIXlt(DATE[i,1], origin = "1970-01-01", tz = "GMT")
-      dt2 <- as.Date(dt1, '%Y/%m/%d')
-      YEAR[i,1] <- as.numeric(format(dt2, '%Y'))
-      MNTH[i,1] <- as.numeric(format(dt2, '%m'))
-      DAYN[i,1] <- as.numeric(format(dt2, '%d'))
-      HOUR[i,1] <- dt1$hour
-      MINU[i,1] <- dt1$min
+for (i in 1:num_val) {
+      DATE[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[1]][[1]]
+      dt <- as_datetime(DATE[i]) # Default to UTC.
+      YEAR[i] <- year(dt)
+      MNTH[i] <- month(dt)
+      DAYN[i] <- day(dt)
+      HOUR[i] <- hour(dt)
+      MINU[i] <- min(dt)
       # SOLAR RADIATION
-      val <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$value
+      SRAD[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$value
       if (is.numeric(val) == TRUE) {
             SRAD[i,1] <- val
             error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$error
