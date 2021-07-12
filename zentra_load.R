@@ -100,10 +100,14 @@ print("Check that the end time is not more than 24 hours before the current time
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[13]]$value   Max Precip Rate          (mm/h)
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[14]]$value   RH Sensor Temp           (degrees C)
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[15]]$value   Vapor Pressure Deficit   (kPa)
-# hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[1]]$value    Battery Percent          (%)
-# hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[2]]$value    Battery Voltage          (mV)
-# hydromet$device$timeseries[[1]]$configuration$values[[i]][[6]][[1]]$value    Reference Pressure       (kPa)
-# hydromet$device$timeseries[[1]]$configuration$values[[i]][[6]][[2]]$value    Logger Temperature       (degrees C)
+# hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[1]]$value    Water Level              (mm)
+# hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[2]]$value    Water Temperature        (degrees C)
+# hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[3]]$value    Conductivity             (mS/cm)
+
+# hydromet$device$timeseries[[1]]$configuration$values[[i]][[5 or 6]][[1]]$value    Battery Percent          (%)
+# hydromet$device$timeseries[[1]]$configuration$values[[i]][[5 or 6]][[2]]$value    Battery Voltage          (mV)
+# hydromet$device$timeseries[[1]]$configuration$values[[i]][[6 or 7]][[1]]$value    Reference Pressure       (kPa)
+# hydromet$device$timeseries[[1]]$configuration$values[[i]][[6 or 7]][[2]]$value    Logger Temperature       (degrees C)
 # $description   text
 # $value         number
 # $unit          text
@@ -129,11 +133,11 @@ WSPD <- YEAR # wind speed (m/s)
 WSPDqc <- PRCPqc
 WDIR <- YEAR # wind direction (degrees)
 WDIRqc <- PRCPqc
-#RIVS <- YEAR
+RIVS <- YEAR
 #RIVSqc <- PRCPqc
-#WTMP <- YEAR
+WTMP <- YEAR
 #WTMPqc <- PRCPqc
-#COND <- YEAR
+COND <- YEAR
 #CONDqc <- PRCPqc
 #TRBD <- YEAR
 #TRBDqc <- PRCPqc
@@ -145,10 +149,29 @@ for (i in 1:num_val) {
       DAYN[i] <- day(dt)
       HOUR[i] <- hour(dt)
       MINU[i] <- min(dt)
-      # SOLAR RADIATION
       SRAD[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$value
+      PRCP[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[2]]$value
+      WDIR[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[5]]$value
+      WSPD[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[6]]$value
+      TEMP[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[8]]$value
+      at <- TEMP[i] + 273.15 # convert air temperature to Kelvin
+      svp <- (6984.505294+at*(-188.903931+at*(2.133357675+at*(-0.01288580973+at*(0.00004393587233+at*(-0.00000008023923082+at*6.136820929E-11))))))/10 # compute saturation vapor pressure in kPa via the Goff-Gratch equation, in nested form (Lowe, 1977; Brutsaert, 2005)
+      vp <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[9]]$value # import vapor pressure in kPa
+      RHMD[i] <- round(100*(vp/svp), digits = 1) # compute relative humidity in %
+      APRS[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[10]]$value
+      RIVS[i] 
+}
+
+# Store to data frame and export
+df <- data.frame(DATE, YEAR, MNTH, DAYN, HOUR, MINU, PRCP, SRAD, TEMP, RHMD, APRS, WSPD, WDIR)
+#df <- data.frame(DATE, YEAR, MNTH, DAYN, HOUR, MINU, PRCP, PRCPqc, SRAD, SRADqc, TEMP, TEMPqc, RHMD, RHMDqc, APRS, APRSqc, WSPD, WSPDqc, WDIR, WDIRqc, RIVS, RIVSqc, WTMP, WTMPqc, COND, CONDqc, TRBD, TRBDqc)
+write.table(df, file = paste0(site, "_", today, ".csv", ""), append = TRUE, sep = ",", dec = ".", col.names = TRUE, row.names = FALSE)
+
+
+# {
+      # SOLAR RADIATION
       if (is.numeric(val) == TRUE) {
-            SRAD[i,1] <- val
+            SRAD[i] <- val
             error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$error
             if (error == FALSE) {
                   SRADqc[i,1] <- 1
@@ -180,7 +203,6 @@ for (i in 1:num_val) {
             SRADqc[i,1] <- 90
       }
       # PRECIPITATION
-      val <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[2]]$value
       if (is.numeric(val) == TRUE) {
             PRCP[i,1] <- val
             error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[2]]$error
@@ -216,7 +238,6 @@ for (i in 1:num_val) {
             PRCPqc[i,1] <- 90
       }
       # WIND DIRECTION
-      val <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[5]]$value
       if (is.numeric(val) == TRUE) {
             WDIR[i,1] <- val
             error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[5]]$error
@@ -237,7 +258,6 @@ for (i in 1:num_val) {
             WDIR[i,1] <- 90
       }
       # WIND SPEED
-      val <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[6]]$value
       if (is.numeric(val) == TRUE) {
             WSPD[i,1] <- val
             error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[6]]$error
@@ -271,7 +291,6 @@ for (i in 1:num_val) {
             WSPDqc[i,1] <- 90
       }
       # AIR TEMPERATURE
-      val <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[8]]$value
       if (is.numeric(val) == TRUE) {
             TEMP[i,1] <- val
             error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[8]]$error
@@ -409,6 +428,11 @@ for (i in 1:num_val) {
             WDIRqc[i,1] <- WDIRqc[i,1] + 2000
       }
 }
+
+
+
+
+
 # QC flags (in XXXXqc fields):
 # xxx0 Raw data
 # xxx1 Edited data
