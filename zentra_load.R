@@ -15,7 +15,7 @@
 
 # Recommended API method from:
 # https://www.earthdatascience.org/courses/earth-analytics/get-data-using-apis/API-data-access-r/
-# library(ggmap)
+library(readr)
 library(ggplot2)
 library(dplyr)
 library(rjson)
@@ -62,6 +62,7 @@ rm(exportJSON)
 
 
 
+
 # Check data download
 tracker <- array("NA", dim=c(1,6))
 tracker[1,1] <- paste(as.character(as_datetime(now(), "UTC")), "UTC") # the current/download time in UTC
@@ -76,11 +77,11 @@ tracker[1,6] <- (mrid+num_val)
 # headers: NUM,DOWNLOAD_DATE_TIME,START_MRID,BEGIN_DATE_TIME,NUMBER_OF_RECORDS,LAST_MRID  
 write.table(tracker, file = paste0(site, "_mrid.csv", ""), append = TRUE, sep = ",", dec = ".", col.names = FALSE)
 # Check number of recordings:
-print(paste0("Number of recordings: ", num_val, sep = ""))
-print(paste0("Number of time steps (inclusive): ", (((endd-begin)/900)+1)), sep = "") # 900 is # of seconds in a 15 minute interval, the plus one is to include the beginning step
+print(paste0("Number of recordings: ", num_val))
+print(paste0("Number of time steps (inclusive): ", (((endd-begin)/900)+1))) # 900 is # of seconds in a 15 minute interval, the plus one is to include the beginning step
 print("Check that these values are the same")
-print(paste0("End date and time: ", tracker[1,5], sep = "")) # end date/time in record
-print(paste0("Current date and time: ", tracker[1,1], sep = "")) # current date/time in record
+print(paste0("End date and time: ", tracker[1,5])) # end date/time in record
+print(paste0("Current date and time: ", tracker[1,1])) # current date/time in record
 print("Check that the end time is not more than 24 hours before the current time")
 
 # Sort data
@@ -103,7 +104,6 @@ print("Check that the end time is not more than 24 hours before the current time
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[1]]$value    Water Level              (mm)
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[2]]$value    Water Temperature        (degrees C)
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[3]]$value    Conductivity             (mS/cm)
-
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[5 or 6]][[1]]$value    Battery Percent          (%)
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[5 or 6]][[2]]$value    Battery Voltage          (mV)
 # hydromet$device$timeseries[[1]]$configuration$values[[i]][[6 or 7]][[1]]$value    Reference Pressure       (kPa)
@@ -112,8 +112,12 @@ print("Check that the end time is not more than 24 hours before the current time
 # $value         number
 # $unit          text
 # $error         logical: TRUE or FALSE
+
+utc_offset <- 3600 * 2 # UTC offset for local time
+
 # Preallocation:
-DATE <- array(-9999, dim = num_val) # date and time in seconds from 00:00 01 Jan 1970, UTC; local time is SAST (UTC+2) or EAT (UTC+3)
+DATE <- array(NA, dim = num_val) # date and time in seconds from 00:00 01 Jan 1970, UTC; local time is SAST (UTC+2) or EAT (UTC+3)
+DATEqc <- array(0, dim = num_val)
 YEAR <- DATE # year
 MNTH <- YEAR # month
 DAYN <- YEAR # day of month
@@ -134,325 +138,293 @@ WSPDqc <- PRCPqc
 WDIR <- YEAR # wind direction (degrees)
 WDIRqc <- PRCPqc
 RIVS <- YEAR
-#RIVSqc <- PRCPqc
+RIVSqc <- PRCPqc
 WTMP <- YEAR
-#WTMPqc <- PRCPqc
+WTMPqc <- PRCPqc
 COND <- YEAR
-#CONDqc <- PRCPqc
-#TRBD <- YEAR
-#TRBDqc <- PRCPqc
-for (i in 1:num_val) {
-      DATE[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[1]][[1]]
-      dt <- as_datetime(DATE[i]) # Default to UTC.
-      YEAR[i] <- year(dt)
-      MNTH[i] <- month(dt)
-      DAYN[i] <- day(dt)
-      HOUR[i] <- hour(dt)
-      MINU[i] <- min(dt)
-      SRAD[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$value
-      PRCP[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[2]]$value
-      WDIR[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[5]]$value
-      WSPD[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[6]]$value
-      TEMP[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[8]]$value
-      at <- TEMP[i] + 273.15 # convert air temperature to Kelvin
-      svp <- (6984.505294+at*(-188.903931+at*(2.133357675+at*(-0.01288580973+at*(0.00004393587233+at*(-0.00000008023923082+at*6.136820929E-11))))))/10 # compute saturation vapor pressure in kPa via the Goff-Gratch equation, in nested form (Lowe, 1977; Brutsaert, 2005)
-      vp <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[9]]$value # import vapor pressure in kPa
-      RHMD[i] <- round(100*(vp/svp), digits = 1) # compute relative humidity in %
-      APRS[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[10]]$value
-      RIVS[i] 
+CONDqc <- PRCPqc
+TRBD <- array(-8888, dim = num_val)
+TRBDqc <- PRCPqc
+# This contains the relevant parameters for the Limpopo Resilience Lab stations: duq.edu/limpopo
+
+# Check date and time for consistency:
+for (i in 2:num_val) {
+      # Test that the interval is at least 15 minutes (900 seconds)
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[1]][[1]] < (hydromet$device$timeseries[[1]]$configuration$values[[i-1]][[1]][[1]] + 900)) {
+            DATEqc[i] <- DATEqc[i] + 900 # error flag for problem with possible repeated values or timing problem
+      }
+      # Test that the interval is no more than 15 minutes
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[1]][[1]] > (hydromet$device$timeseries[[1]]$configuration$values[[i-1]][[1]][[1]] + 900)) {
+            DATEqc[i] <- DATEqc[i] + 90 # error flag for problem with possible repeated values or timing problem
+      }
 }
+max(DATEqc)
+# which.max(DATEqc)
 
-# Store to data frame and export
-df <- data.frame(DATE, YEAR, MNTH, DAYN, HOUR, MINU, PRCP, SRAD, TEMP, RHMD, APRS, WSPD, WDIR)
-#df <- data.frame(DATE, YEAR, MNTH, DAYN, HOUR, MINU, PRCP, PRCPqc, SRAD, SRADqc, TEMP, TEMPqc, RHMD, RHMDqc, APRS, APRSqc, WSPD, WSPDqc, WDIR, WDIRqc, RIVS, RIVSqc, WTMP, WTMPqc, COND, CONDqc, TRBD, TRBDqc)
-write.table(df, file = paste0(site, "_", today, ".csv", ""), append = TRUE, sep = ",", dec = ".", col.names = TRUE, row.names = FALSE)
-
-
-# {
+for (i in 1:num_val) {
+      DATE[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[1]][[1]] # DATE is in UTC
+      dt <- as_datetime(DATE[i]) + utc_offset # Convert: UTC to SAST, UTC+2 hours, or 7200 seconds in South Africa, set this value at line 115
+      YEAR[i] <- year(dt) # LOCAL TIME
+      MNTH[i] <- month(dt) # LOCAL TIME
+      DAYN[i] <- day(dt) # LOCAL TIME
+      HOUR[i] <- hour(dt) # LOCAL TIME
+      MINU[i] <- min(dt) # LOCAL TIME
       # SOLAR RADIATION
-      if (is.numeric(val) == TRUE) {
-            SRAD[i] <- val
-            error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$error
-            if (error == FALSE) {
-                  SRADqc[i,1] <- 1
-                  if (i>6) {
-                        if (SRAD[i,1] == SRAD[i-1,1]) {
-                              if (SRAD[i,1] == SRAD[i-2,1]) {
-                                    if (SRAD[i,1] == SRAD[i-3,1]) {
-                                          if (SRAD[i,1] == SRAD[i-4,1]) {
-                                                if (SRAD[i,1] == SRAD[i-5,1]) {
-                                                      SRADqc[i,1] <- SRADqc[i,1] + 100 # detects and indicates a stuck value
-                                                }
-                                          }
-                                    }
-                              }
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$value)) {
+            SRAD[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$value
+            if (SRAD[i] < 0) {
+                  SRADqc[i] <- SRADqc[i] + 5 # detects and indicates a value below range
+            }
+            if (SRAD[i] > 2000) {
+                  SRADqc[i] <- SRADqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 3) {
+                  if ((!is.na(SRAD[i-1])) & (!is.na(SRAD[i-2]))) { # tests if there are sufficient values and both previous values are not NA, !is.na()
+                        if ((SRAD[i] == SRAD[i-1]) & (SRAD[i] == SRAD[i-2])) {
+                              SRADqc[i] <- SRADqc[i] + 90 # detects possible stuck value
                         }
                   }
-                  if (SRAD[i,1] < 0) {
-                        SRADqc[i,1] <- SRADqc[i,1] + 10 # detects and indicates a value below range
-                  }
-                  if (SRAD[i,1] > 2000) {
-                        SRADqc[i,1] <- SRADqc[i,1] + 20 # detects and indicates a value above range
-                  }
-            } else {
-                  SRAD[i,1]  <- -7777
-                  SRADqc[i,1] <- 900 # marks an error passed from the datalogger
             }
       } else {
-            SRAD[i,1] <- -9999
-            SRADqc[i,1] <- 90
+            SRADqc[i] <- SRADqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$error) {
+            SRADqc[i] <- SRADqc[i] + 9000 # Logger error
       }
       # PRECIPITATION
-      if (is.numeric(val) == TRUE) {
-            PRCP[i,1] <- val
-            error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[2]]$error
-            if (error == FALSE) {
-                  PRCPqc[i,1] <- 1
-                  if (i>6) {
-                        if (PRCP[i,1] > 0) { # exempts repetative value error if zero.
-                              if (PRCP[i,1] == PRCP[i-1,1]) {
-                                    if (PRCP[i,1] == PRCP[i-2,1]) {
-                                          if (PRCP[i,1] == PRCP[i-3,1]) {
-                                                if (PRCP[i,1] == PRCP[i-4,1]) {
-                                                      if (PRCP[i,1] == PRCP[i-5,1]) {
-                                                            PRCPqc[i,1] <- PRCPqc[i,1] + 100 # detects and indicates a stuck value
-                                                      }
-                                                }
-                                          }
-                                    }
-                              }
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[2]]$value)) {
+            PRCP[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[2]]$value
+            if (PRCP[i] < 0) {
+                  PRCPqc[i] <- PRCPqc[i] + 5 # detects and indicates a value below range
+            }
+            if (PRCP[i] > 200) {
+                  PRCPqc[i] <- PRCPqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 4) {
+                  if ((!is.na(PRCP[i-1])) & (!is.na(PRCP[i-2])) & (!is.na(PRCP[i-3])) & (!is.na(PRCP[i-4]))) {
+                        if ((PRCP[i] == PRCP[i-1]) & (PRCP[i] == PRCP[i-2]) & (PRCP[i] == PRCP[i-3]) & (PRCP[i] == PRCP[i-4])) {
+                              PRCPqc[i] <- PRCPqc[i] + 90 # detects possible stuck value
                         }
                   }
-                  if (PRCP[i,1] < 0) {
-                        PRCPqc[i,1] <- PRCPqc[i,1] + 10 # detects and indicates a value below range
-                  }
-                  if (PRCP[i,1] > 2000) {
-                        PRCPqc[i,1] <- PRCPqc[i,1] + 20 # detects and indicates a value above range
-                  }
-            } else {
-                  PRCP[i,1]  <- -7777
-                  PRCPqc[i,1] <- 900 # marks an error passed from the datalogger
             }
       } else {
-            PRCP[i,1] <- -9999
-            PRCPqc[i,1] <- 90
+            PRCPqc[i] <- PRCPqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[2]]$error) {
+            PRCPqc[i] <- PRCPqc[i] + 9000 # Logger error
       }
       # WIND DIRECTION
-      if (is.numeric(val) == TRUE) {
-            WDIR[i,1] <- val
-            error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[5]]$error
-            if (error == FALSE) { # ***no stuck value detection for wind direction
-                  WDIRqc[i,1] <- 1
-                  if (WDIR[i,1] < 0) {
-                        WDIRqc[i,1] <- 10 # detects and indicates a value below range
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[5]]$value)) {
+            WDIR[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[5]]$value
+            if (WDIR[i] < 0) {
+                  WDIRqc[i] <- WDIRqc[i] + 5 # detects and indicates a value below range
+            }
+            if (WDIR[i] > 360) {
+                  WDIRqc[i] <- WDIRqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 3) {
+                  if ((!is.na(WDIR[i-1])) & (!is.na(WDIR[i-2]))) {
+                        if ((WDIR[i] == WDIR[i-1]) & (WDIR[i] == WDIR[i-2])) {
+                              WDIRqc[i] <- WDIRqc[i] + 90 # detects possible stuck value
+                        }
                   }
-                  if (WDIR[i,1] > 360) {
-                        WDIRqc[i,1] <- 20 # detects and indicates a value above range
-                  }
-            } else {
-                  WDIR[i,1] <- -7777
-                  WDIRqc[i,1] <- 900 # marks an error passed from the datalogger
             }
       } else {
-            WDIR[i,1] <- -9999
-            WDIR[i,1] <- 90
+            WDIRqc[i] <- WDIRqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[5]]$error) {
+            WDIRqc[i] <- WDIRqc[i] + 9000 # Logger error
       }
       # WIND SPEED
-      if (is.numeric(val) == TRUE) {
-            WSPD[i,1] <- val
-            error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[6]]$error
-            if (error == FALSE) {
-                  WSPDqc[i,1] <- 1
-                  if (i>6) {
-                        if (WSPD[i,1] == WSPD[i-1,1]) {
-                              if (WSPD[i,1] == WSPD[i-2,1]) {
-                                    if (WSPD[i,1] == WSPD[i-3,1]) {
-                                          if (WSPD[i,1] == WSPD[i-4,1]) {
-                                                if (WSPD[i,1] == WSPD[i-5,1]) {
-                                                      WSPDqc[i,1] <- WSPDqc[i,1] + 100 # detects and indicates a stuck value
-                                                }
-                                          }
-                                    }
-                              }
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[6]]$value)) {
+            WSPD[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[6]]$value
+            if (WSPD[i] < 0) {
+                  WSPDqc[i] <- WSPDqc[i] + 5 # detects and indicates a value below range
+            }
+            if (WSPD[i] > 100) {
+                  WSPDqc[i] <- WSPDqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 3) {
+                  if ((!is.na(WSPD[i-1])) & (!is.na(WSPD[i-2]))) {
+                        if ((WSPD[i] == WSPD[i-1]) & (WSPD[i] == WSPD[i-2])) {
+                              WSPDqc[i] <- WSPDqc[i] + 90 # detects possible stuck value
                         }
                   }
-                  if (WSPD[i,1] < 0) {
-                        WSPDqc[i,1] <- WSPDqc[i,1] + 10 # detects and indicates a value below range
-                  }
-                  if (WSPD[i,1] > 100) {
-                        WSPDqc[i,1] <- WSPDqc[i,1] + 20 # detects and indicates a value above range
-                  }
-            } else {
-                  WSPD[i,1] <- -7777
-                  WSPDqc[i,1] <- 900 # marks an error passed from the datalogger
             }
       } else {
-            WSPD[i,1] <- -9999
-            WSPDqc[i,1] <- 90
+            WSPDqc[i] <- WSPDqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[6]]$error) {
+            WSPDqc[i] <- WSPDqc[i] + 9000 # Logger error
       }
       # AIR TEMPERATURE
-      if (is.numeric(val) == TRUE) {
-            TEMP[i,1] <- val
-            error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[8]]$error
-            if (error == FALSE) {
-                  TEMPqc[i,1] <- 1
-                  if (i>6) {
-                        if (TEMP[i,1] == TEMP[i-1,1]) {
-                              if (TEMP[i,1] == TEMP[i-2,1]) {
-                                    if (TEMP[i,1] == TEMP[i-3,1]) {
-                                          if (TEMP[i,1] == TEMP[i-4,1]) {
-                                                if (TEMP[i,1] == TEMP[i-5,1]) {
-                                                      TEMPqc[i,1] <- TEMPqc[i,1] + 100 # detects and indicates a stuck value
-                                                }
-                                          }
-                                    }
-                              }
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[8]]$value)) {
+            TEMP[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[8]]$value
+            if (TEMP[i] < -15) {
+                  TEMPqc[i] <- TEMPqc[i] + 5 # detects and indicates a value below range
+            }
+            if (TEMP[i] > 55) {
+                  TEMPqc[i] <- TEMPqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 3) {
+                  if ((!is.na(TEMP[i-1])) & (!is.na(TEMP[i-2]))) {
+                        if ((TEMP[i] == TEMP[i-1]) & (TEMP[i] == TEMP[i-2])) {
+                              TEMPqc[i] <- TEMPqc[i] + 90 # detects possible stuck value
                         }
                   }
-                  if (TEMP[i,1] < 0) {
-                        TEMPqc[i,1] <- TEMPqc[i,1] + 10 # detects and indicates a value below range
-                  }
-                  if (TEMP[i,1] > 50) {
-                        TEMPqc[i,1] <- TEMPqc[i,1] + 20 # detects and indicates a value above range
-                  }
-            } else {
-                  TEMP[i,1] <- -7777
-                  TEMPqc[i,1] <- 900 # marks an error passed from the datalogger
             }
       } else {
-            TEMP[i,1] <- -9999
-            TEMPqc[i,1] <- 90
+            TEMPqc[i] <- TEMPqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[8]]$error) {
+            TEMPqc[i] <- TEMPqc[i] + 9000 # Logger error
       }
       # RELATIVE HUMIDITY
-      if (abs(TEMPqc[i,1]) < 10) { # will still calculate if it is a possible stuck error
-            at <- TEMP[i,1] + 273.15 # convert air temperature to Kelvin
+      if ((is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[9]]$value)) & (is.numeric(TEMP[i]))) {
+            at <- TEMP[i] + 273.15 # convert air temperature to Kelvin
             svp <- (6984.505294+at*(-188.903931+at*(2.133357675+at*(-0.01288580973+at*(0.00004393587233+at*(-0.00000008023923082+at*6.136820929E-11))))))/10 # compute saturation vapor pressure in kPa via the Goff-Gratch equation, in nested form (Lowe, 1977; Brutsaert, 2005)
-            val <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[9]]$value # import vapor pressure in kPa
-            if (is.numeric(val) == TRUE) {
-                  vp <- val
-                  RHMD[i,1] <- round(100*(vp/svp), digits = 1) # compute relative humidity in %
-                  error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[9]]$error
-                  if (error == FALSE) {
-                        RHMDqc[i,1] <- 2
-                        if (i>6) {
-                              if (RHMD[i,1] == RHMD[i-1,1]) {
-                                    if (RHMD[i,1] == RHMD[i-2,1]) {
-                                          if (RHMD[i,1] == RHMD[i-3,1]) {
-                                                if (RHMD[i,1] == RHMD[i-4,1]) {
-                                                      if (RHMD[i,1] == RHMD[i-5,1]) {
-                                                            RHMDqc[i,1] <- RHMDqc[i,1] + 100 # detects and indicates a stuck value
-                                                      }
-                                                }
-                                          }
-                                    }
-                              }
+            vp <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[9]]$value # import vapor pressure in kPa
+            RHMD[i] <- round(100*(vp/svp), digits = 1) # compute relative humidity in %
+            if (vp < 0) {
+                  RHMDqc[i] <- RHMDqc[i] + 5 # detects and indicates a value below range
+            }
+            if (vp > 10) {
+                  RHMDqc[i] <- RHMDqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 3) {
+                  if ((!is.na(RHMD[i-1])) & (!is.na(RHMD[i-2]))) {
+                        if ((RHMD[i] == RHMD[i-1]) & (RHMD[i] == RHMD[i-2])) {
+                              RHMDqc[i] <- RHMDqc[i] + 90 # detects possible stuck value
                         }
-                        if (RHMD[i,1] < 0) {
-                              RHMDqc[i,1] <- RHMDqc[i,1] + 10 # detects and indicates a value below range
-                        }
-                        if (RHMD[i,1] > 100) {
-                              RHMDqc[i,1] <- RHMDqc[i,1] + 20 # detects and indicates a value above range
-                        }
-                        if (TEMPqc[i,1] > 5) {
-                              RHMDqc[i,1] <- RHMDqc[i,1] + 30 # marks any problem based on air temperature error
-                        }
-                  } else {
-                        RHMD[i,1] <- -7777
-                        RHMDqc[i,1] <- 900 # marks an error passed from the datalogger
                   }
-                  
-            } else {
-                  RHMD[i,1] <- -9999
-                  RHMDqc[i,1] <- 90
             }
       } else {
-            RHMD[i,1] <- -7777
-            RHMDqc[i,1] <- 80
+            RHMDqc[i] <- RHMDqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[9]]$error) {
+            RHMDqc[i] <- RHMDqc[i] + 9000 # Logger error
       }
       # AIR PRESSURE
-      val <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[10]]$value
-      if (is.numeric(val) == TRUE) {
-            APRS[i,1] <- val
-            error <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[10]]$error
-            if (error == FALSE) {
-                  APRSqc[i,1] <- 1
-                  if (i>6) {
-                        if (APRS[i,1] == APRS[i-1]) {
-                              if (APRS[i,1] == APRS[i-2]) {
-                                    if (APRS[i,1] == APRS[i-3]) {
-                                          if (APRS[i,1] == APRS[i-4]) {
-                                                if (APRS[i,1] == APRS[i-5]) {
-                                                      APRSqc[i,1] <- APRSqc[i,1] + 100 # detects and indicates a stuck value
-                                                }
-                                          }
-                                    }
-                              }
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[10]]$value)) {
+            APRS[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[10]]$value
+            if (APRS[i] < 65) {
+                  APRSqc[i] <- APRSqc[i] + 5 # detects and indicates a value below range
+            }
+            if (APRS[i] > 110) {
+                  APRSqc[i] <- APRSqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 3){
+                  if ((!is.na(APRS[i-1])) & (!is.na(APRS[i-2]))) {
+                        if ((APRS[i] == APRS[i-1]) & (APRS[i] == APRS[i-2])) {
+                              APRSqc[i] <- APRSqc[i] + 90 # detects possible stuck value
                         }
                   }
-                  if (APRS[i,1] < 70) {
-                        APRSqc[i,1] <- APRSqc[i,1] + 10 # detects and indicates a value below range
-                  }
-                  if (APRS[i,1] > 100) {
-                        APRSqc[i,1] <- APRSqc[i,1] + 20 # detects and indicates a value above range
-                  }
-            } else {
-                  APRS[i,1] <- -7777
-                  APRSqc[i,1] <- 900 # marks an error passed from the datalogger
             }
       } else {
-            APRS[i,1] <- -9999
-            APRSqc[i,1] <- 90
+            APRSqc[i] <- APRSqc[i] + 900 # Logger error - no value
       }
-      x <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[11]]$value
-      y <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[12]]$value
-      if (is.numeric(x) == TRUE) {
-            if (is.numeric(y) == TRUE) {
-                  tilt <- sqrt((x^2)+(y^2))
-                  if (tilt >= 2) {
-                        PRCPqc[i,1] <- PRCPqc[i,1] + 1000
-                        SRADqc[i,1] <- SRADqc[i,1] + 1000
-                        WSPDqc[i,1] <- WSPDqc[i,1] + 1000
-                        WDIRqc[i,1] <- WDIRqc[i,1] + 1000
-                        print(paste0("Sensors tilted past 2 degrees ", dt1, sep = "")) # error time
-                  }
-            } else {
-                  PRCPqc[i,1] <- PRCPqc[i,1] + 2000
-                  SRADqc[i,1] <- SRADqc[i,1] + 2000
-                  WSPDqc[i,1] <- WSPDqc[i,1] + 2000
-                  WDIRqc[i,1] <- WDIRqc[i,1] + 2000
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[10]]$error) {
+            APRSqc[i] <- APRSqc[i] + 9000 # Logger error
+      }
+      # TILT
+      if ((is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[11]]$value)) & (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[12]]$value))) {
+            x <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[11]]$value
+            y <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[12]]$value
+            tilt <- sqrt((x^2)+(y^2))
+            if (tilt >= 2) {
+                  PRCPqc[i] <- PRCPqc[i] + 90000
+                  SRADqc[i] <- SRADqc[i] + 90000
+                  WSPDqc[i] <- WSPDqc[i] + 90000
+                  WDIRqc[i] <- WDIRqc[i] + 90000
+                  print(paste0("Sensors tilted past 2 degrees at index ", i, " at time ", dt)) # error time
             }
       } else {
-            PRCPqc[i,1] <- PRCPqc[i,1] + 2000
-            SRADqc[i,1] <- SRADqc[i,1] + 2000
-            WSPDqc[i,1] <- WSPDqc[i,1] + 2000
-            WDIRqc[i,1] <- WDIRqc[i,1] + 2000
+            PRCPqc[i] <- PRCPqc[i] + 80000
+            SRADqc[i] <- SRADqc[i] + 80000
+            WSPDqc[i] <- WSPDqc[i] + 80000
+            WDIRqc[i] <- WDIRqc[i] + 80000
+      }
+      # RIVER STAGE
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[1]]$value)) {
+            RIVS[i] <- (hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[1]]$value-875)/1000 # measured above the wier crest, to coincide with the staff gage at the weir, sensor is located 0.875 m below the weir crest, converted to m from mm
+            if (RIVS[i] < -5) {
+                  RIVSqc[i] <- RIVSqc[i] + 5 # detects and indicates a value below range
+            }
+            if (RIVS[i] > 5) {
+                  RIVSqc[i] <- RIVSqc[i] + 6 # detects and indicates a value above range
+            }
+            # if ((i > 5) & (!is.na(APRS[i-1])) & (!is.na(APRS[i-2])) & (!is.na(APRS[i-3])) & (!is.na(APRS[i-4])) & (!is.na(APRS[i-5]))) { # UNSURE IF THIS IS GOING TO HELP OR HURT.
+            #       if ((RIVS[i] == RIVS[i-1]) & (RIVS[i] == RIVS[i-2]) & (RIVS[i] == RIVS[i-3]) & (RIVS[i] == RIVS[i-4]) & (RIVS[i] == RIVS[i-5])) {
+            #             RIVSqc[i] <- RIVSqc[i] + 90 # detects possible stuck value
+            #       }
+            # }
+      } else {
+            RIVSqc[i] <- RIVSqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[1]]$error) {
+            RIVSqc[i] <- RIVSqc[i] + 9000 # Logger error
+      }
+      # WATER TEMPERATURE
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[2]]$value)) {
+            WTMP[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[2]]$value
+            if (WTMP[i] < 0) {
+                  WTMPqc[i] <- WTMPqc[i] + 5 # detects and indicates a value below range
+            }
+            if (WTMP[i] > 40) {
+                  WTMPqc[i] <- WTMPqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 3) {
+                  if ((!is.na(WTMP[i-1])) & (!is.na(WTMP[i-2]))) {
+                        if ((WTMP[i] == WTMP[i-1]) & (WTMP[i] == WTMP[i-2])) {
+                              WTMPqc[i] <- WTMPqc[i] + 90 # detects possible stuck value
+                        }
+                  }
+            }
+      } else {
+            WTMPqc[i] <- WTMPqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[2]]$error) {
+            WTMPqc[i] <- WTMPqc[i] + 9000 # Logger error
+      }
+      # CONDUCTIVITY
+      if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[3]]$value)) {
+            COND[i] <- 1000 * hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[3]]$value # convert from mS/cm to uS/cm.
+            if (COND[i] < -5) {
+                  CONDqc[i] <- CONDqc[i] + 5 # detects and indicates a value below range
+            }
+            if (COND[i] > 5) {
+                  CONDqc[i] <- CONDqc[i] + 6 # detects and indicates a value above range
+            }
+            if (i > 3) {
+                  if ((!is.na(COND[i-1])) & (!is.na(COND[i-2]))) {
+                        if ((COND[i] == COND[i-1]) & (COND[i] == COND[i-2])) {
+                              CONDqc[i] <- CONDqc[i] + 90 # detects possible stuck value
+                        }
+                  }
+            }
+      } else {
+            CONDqc[i] <- CONDqc[i] + 900 # Logger error - no value
+      }
+      if (hydromet$device$timeseries[[1]]$configuration$values[[i]][[5]][[3]]$error) {
+            CONDqc[i] <- CONDqc[i] + 9000 # Logger error
       }
 }
 
-
-
-
-
 # QC flags (in XXXXqc fields):
-# xxx0 Raw data
-# xxx1 Edited data
-# xxx2 Derived value
-# xxx3 Interpreted value
-# xxx4 Knowledge product
-# 000x No concerns
-# xx1x Value below range
-# xx2x Value above range
-# xx3x, xx4x, xx5x, Dependent sensor out of QC
-# xx9x Non-numeric value generated
-# x1xx Possible stuck value
-# x9xx Error passed from datalogger
-# 1xxx Tilt of sensor is out of QC range (2 degrees)
-# 2xxx Tilt data missing
+# 00000 No concerns
+# xxxx5 Value below range
+# xxxx6 Value above range
+# xxx9x Possible stuck value
+# xx9xx Non-numeric value
+# x9xxx Error passed from datalogger
+# 9xxxx Tilt of sensor is out of QC range (2 degrees)
+# 8xxxx Tilt data missing
 
 # Store to data frame and export
-df <- data.frame(DATE, YEAR, MNTH, DAYN, HOUR, MINU, PRCP, PRCPqc, SRAD, SRADqc, TEMP, TEMPqc, RHMD, RHMDqc, APRS, APRSqc, WSPD, WSPDqc, WDIR, WDIRqc)
-#df <- data.frame(DATE, YEAR, MNTH, DAYN, HOUR, MINU, PRCP, PRCPqc, SRAD, SRADqc, TEMP, TEMPqc, RHMD, RHMDqc, APRS, APRSqc, WSPD, WSPDqc, WDIR, WDIRqc, RIVS, RIVSqc, WTMP, WTMPqc, COND, CONDqc, TRBD, TRBDqc)
-write.table(df, file = paste0(site, "_", today, ".csv", ""), append = TRUE, sep = ",", dec = ".", col.names = TRUE, row.names = FALSE)
 
+#df <- data.frame(DATE, YEAR, MNTH, DAYN, HOUR, MINU, PRCP, PRCPqc, SRAD, SRADqc, TEMP, TEMPqc, RHMD, RHMDqc, APRS, APRSqc, WSPD, WSPDqc, WDIR, WDIRqc)
+df <- data.frame(DATE, YEAR, MNTH, DAYN, HOUR, MINU, PRCP, PRCPqc, SRAD, SRADqc, TEMP, TEMPqc, RHMD, RHMDqc, APRS, APRSqc, WSPD, WSPDqc, WDIR, WDIRqc, RIVS, RIVSqc, WTMP, WTMPqc, COND, CONDqc, TRBD, TRBDqc)
+write_csv(df, paste0(site, "_", today, ".csv"), na = "NA", append = TRUE, eol = "\n") # UNIX standard end of line, comma-delimited, decimal point used "."
 # For upload to HydroServer
 # http://hydroserver.cuahsi.org/Home/ControlledVocabularies
+
