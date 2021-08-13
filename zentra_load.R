@@ -168,7 +168,7 @@ for (i in 1:num_val) {
       MNTH[i] <- month(dt) # LOCAL TIME
       DAYN[i] <- day(dt) # LOCAL TIME
       HOUR[i] <- hour(dt) # LOCAL TIME
-      MINU[i] <- min(dt) # LOCAL TIME
+      MINU[i] <- minute(dt) # LOCAL TIME
       # SOLAR RADIATION
       if (is.numeric(hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$value)) {
             SRAD[i] <- hydromet$device$timeseries[[1]]$configuration$values[[i]][[4]][[1]]$value
