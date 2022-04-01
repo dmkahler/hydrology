@@ -1,0 +1,76 @@
+# Download and analyze the river flow data.
+# Beitbridge 1955-1992 A7H004
+# Beitbridge A7H008 start: 1992-07-28
+
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(rjson)
+library(RCurl)
+library(stringr)
+library(devtools)
+# install_github("LimpopoLab/hydrostats")
+library(hydrostats)
+library(doParallel) # loads parallel and foreach
+registerDoParallel(detectCores())
+
+## Prepare URL for data scraping
+# Example: https://www.dws.gov.za/Hydrology/Verified/HyData.aspx?Station=A7H008100.00&DataType=Point&StartDT=2021-01-01&EndDT=2022-01-27&SiteType=RIV
+base <- "https://www.dws.gov.za/Hydrology/Verified/HyData.aspx?Station="
+station <- "A7H008"
+variable <- "100.00"
+stem1 <- "&DataType=Point&StartDT="
+start <- "1992-07-28"
+stem2 <- "&EndDT="
+end <- "2022-01-27"
+tail <- "&SiteType=RIV"
+
+for (i in 1:100) {
+  ## Pull from URL with current start date
+  full_url = paste0(base,station,variable,stem1,start,stem2,end,tail)
+  api_end <- URLencode(full_url)
+  data <- getURL(api_end) # not in JSON, imports as unformatted text.
+  data <- strsplit(data,"\n") # separate by line break code
+  
+  ## Find start and end of data
+  for (i in 1:length(data[[1]])) {
+    line <- strsplit(data[[1]][i]," ")
+    if (line[[1]][1]=="DATE") {
+      ln1 <- i+1
+    }
+    if (line[[1]][1]=="</pre></p>\r") {
+      ln2 <- i-1
+    }
+  }
+  
+  ## Determine last date and time of data
+  line <- strsplit(data[[1]][ln2]," ")
+  dt <- ymd_hms(paste0(line[[1]][1],"T",line[[1]][2]))
+  dt <- force_tz(dt, tzone = "Africa/Johannesburg")
+  dt <- dt+(12*60) # adds 12 minutes to the last time to determine the next time for data
+  start <- as.character(date(dt))
+  
+  ## Split and sort data into table
+  x <- foreach(i=ln1:ln2, .combine = 'rbind') %dopar% {
+    line <- strsplit(data[[1]][i]," ")
+    dt <- ymd_hms(paste0(line[[1]][1],"T",line[[1]][2]))
+    dt <- force_tz(dt, tzone = "Africa/Johannesburg") # date and time, Unix standard (seconds, UTC), rem with_tz()
+    lev <- as.numeric(line[[1]][17]) # river level
+    lvq <- as.numeric(line[[1]][19]) # river level quality flag
+    dsc <- as.numeric(line[[1]][33]) # river discharge
+    dsq <- as.numeric(line[[1]][35]) # river discharge quality flag
+    c(dt,lev,lvq,dsc,dsq)
+  }
+  
+  ## Write data so far to table
+  x <- data.frame(x)
+  x <- y %>%
+    mutate(dts=as.character(with_tz(as_datetime(X1), tzone = "Africa/Johannesburg")))
+  write_csv(x, paste0(station,".csv"), append = TRUE)
+}
+
+dt <- with_tz(as_datetime(x[,1]), tzone = "Africa/Johannesburg")
+y <- cbind(dt,x)
+
+
