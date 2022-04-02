@@ -75,7 +75,4 @@ for (i in 1:100) {
   write_csv(x, paste0(station,".csv"), append = TRUE)
 }
 
-dt <- with_tz(as_datetime(x[,1]), tzone = "Africa/Johannesburg")
-y <- cbind(dt,x)
-
 
