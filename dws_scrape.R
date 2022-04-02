@@ -53,18 +53,19 @@ for (i in 1:100) {
   
   ## Split and sort data into table
   x <- foreach(i=ln1:ln2, .combine = 'rbind') %dopar% {
+    meas <- array(NA, dim = 5)
     line <- strsplit(data[[1]][i]," ")
     dt <- ymd_hms(paste0(line[[1]][1],"T",line[[1]][2]))
     dt <- force_tz(dt, tzone = "Africa/Johannesburg") # date and time, Unix standard (seconds, UTC), rem with_tz()
-    column <- 1
-    meas <- array(NA, dim = 4)
+    meas[1] <- dt
+    column <- 2
     for (j in 3:length(line[[1]])) {
       if (is.na(as.numeric(line[[1]][j]))==FALSE) {
         meas[column] <- as.numeric(line[[1]][j])
         column <- column+1
       }
     }
-    c(dt,lev,lvq,dsc,dsq)
+    print(meas)
   }
   
   ## Write data so far to table
