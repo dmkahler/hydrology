@@ -30,7 +30,7 @@ for (i in 1:100) {
   ## Pull from URL with current start date
   full_url = paste0(base,station,variable,stem1,start,stem2,end,tail)
   api_end <- URLencode(full_url)
-  data <- getURL(api_end) # not in JSON, imports as unformatted text.
+  data <- getURL(api_end) # not in JSON, imports as unformatted text.  THIS IS IMPORT LINE!
   data <- strsplit(data,"\n") # separate by line break code
   
   ## Find start and end of data
@@ -56,16 +56,20 @@ for (i in 1:100) {
     line <- strsplit(data[[1]][i]," ")
     dt <- ymd_hms(paste0(line[[1]][1],"T",line[[1]][2]))
     dt <- force_tz(dt, tzone = "Africa/Johannesburg") # date and time, Unix standard (seconds, UTC), rem with_tz()
-    lev <- as.numeric(line[[1]][17]) # river level
-    lvq <- as.numeric(line[[1]][19]) # river level quality flag
-    dsc <- as.numeric(line[[1]][33]) # river discharge
-    dsq <- as.numeric(line[[1]][35]) # river discharge quality flag
+    column <- 1
+    meas <- array(NA, dim = 4)
+    for (j in 3:length(line[[1]])) {
+      if (is.na(as.numeric(line[[1]][j]))==FALSE) {
+        meas[column] <- as.numeric(line[[1]][j])
+        column <- column+1
+      }
+    }
     c(dt,lev,lvq,dsc,dsq)
   }
   
   ## Write data so far to table
   x <- data.frame(x)
-  x <- y %>%
+  x <- x %>%
     mutate(dts=as.character(with_tz(as_datetime(X1), tzone = "Africa/Johannesburg")))
   write_csv(x, paste0(station,".csv"), append = TRUE)
 }
