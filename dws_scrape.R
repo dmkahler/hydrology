@@ -1,6 +1,6 @@
 # Download and analyze the river flow data.
-# Beitbridge 1955-1992 A7H004
-# Beitbridge A7H008 start: 1992-07-28
+# Beitbridge A7H004 start: 1955-06-27 end: 1992-07-15
+# Beitbridge A7H008 start: 1992-07-28 end: 2022-01-27
 
 library(readr)
 library(ggplot2)
@@ -10,21 +10,29 @@ library(rjson)
 library(RCurl)
 library(stringr)
 library(devtools)
-# install_github("LimpopoLab/hydrostats")
-library(hydrostats)
 library(doParallel) # loads parallel and foreach
 registerDoParallel(detectCores())
 
 ## Prepare URL for data scraping
 # Example: https://www.dws.gov.za/Hydrology/Verified/HyData.aspx?Station=A7H008100.00&DataType=Point&StartDT=2021-01-01&EndDT=2022-01-27&SiteType=RIV
+# The format of this file is as follows:
+# POS.  1-8   = Date of measurement CCYYMMDD
+# POS. 10-15  = Time of measurement HHMMSS
+# POS. 27-35  = Corrected level in m
+# POS. 37-40  = Quality code
+# POS. 52-60  = Corrected flow in cubic metres/sec
+# POS. 62-65  = Quality code
+# Waiting on quality code key (2022 Apr 04)
 base <- "https://www.dws.gov.za/Hydrology/Verified/HyData.aspx?Station="
-station <- "A7H008"
+station <- "A7H004"
 variable <- "100.00"
 stem1 <- "&DataType=Point&StartDT="
-start <- "1992-07-28"
+start <- "1955-06-27"
 stem2 <- "&EndDT="
-end <- "2022-01-27"
+end <- "1992-07-15"
 tail <- "&SiteType=RIV"
+terminate <- force_tz(as_datetime(ymd(end)), tzone = "Africa/Johannesburg")
+
 
 for (i in 1:100) {
   ## Pull from URL with current start date
@@ -65,6 +73,8 @@ for (i in 1:100) {
         column <- column+1
       }
     }
+    # Check to determine if data sorted correctly.  Specifically, missing data may be skipped and the quality flag may be inserted.
+    
     print(meas)
   }
   
@@ -73,6 +83,10 @@ for (i in 1:100) {
   x <- x %>%
     mutate(dts=as.character(with_tz(as_datetime(X1), tzone = "Africa/Johannesburg")))
   write_csv(x, paste0(station,".csv"), append = TRUE)
+  
+  ## Check to see if we're at the end
+  begin <- force_tz(as_datetime(ymd_hms(start)), tzone = "Africa/Johannesburg")
+  if (begin >= terminate) {break}
 }
 
 
