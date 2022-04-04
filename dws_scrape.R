@@ -15,13 +15,6 @@ registerDoParallel(detectCores())
 
 ## Prepare URL for data scraping
 # Example: https://www.dws.gov.za/Hydrology/Verified/HyData.aspx?Station=A7H008100.00&DataType=Point&StartDT=2021-01-01&EndDT=2022-01-27&SiteType=RIV
-# The format of this file is as follows:
-# POS.  1-8   = Date of measurement CCYYMMDD
-# POS. 10-15  = Time of measurement HHMMSS
-# POS. 27-35  = Corrected level in m
-# POS. 37-40  = Quality code
-# POS. 52-60  = Corrected flow in cubic metres/sec
-# POS. 62-65  = Quality code
 # Waiting on quality code key (2022 Apr 04)
 base <- "https://www.dws.gov.za/Hydrology/Verified/HyData.aspx?Station="
 station <- "A7H004"
@@ -62,19 +55,27 @@ for (i in 1:100) {
   ## Split and sort data into table
   x <- foreach(i=ln1:ln2, .combine = 'rbind') %dopar% {
     meas <- array(NA, dim = 5)
-    line <- strsplit(data[[1]][i]," ")
-    dt <- ymd_hms(paste0(line[[1]][1],"T",line[[1]][2]))
+    # The format of this file is as follows:
+    # POS.  1-8   = Date of measurement CCYYMMDD
+    # POS. 10-15  = Time of measurement HHMMSS
+    # POS. 27-35  = Corrected level in m
+    # POS. 37-40  = Quality code
+    # POS. 52-60  = Corrected flow in cubic metres/sec
+    # POS. 62-65  = Quality code
+    line <- strsplit(data[[1]][i],"")
+    # Parse date and time
+    dt <- ymd_hms(paste0(line[[1]][1],line[[1]][2],line[[1]][3],line[[1]][4],line[[1]][5],line[[1]][6],line[[1]][7],line[[1]][8],"T",line[[1]][10],line[[1]][11],line[[1]][12],line[[1]][13],line[[1]][14],line[[1]][15]))
     dt <- force_tz(dt, tzone = "Africa/Johannesburg") # date and time, Unix standard (seconds, UTC), rem with_tz()
     meas[1] <- dt
-    column <- 2
-    for (j in 3:length(line[[1]])) {
-      if (is.na(as.numeric(line[[1]][j]))==FALSE) {
-        meas[column] <- as.numeric(line[[1]][j])
-        column <- column+1
-      }
+    # Parse water level (m)
+    meas[2] <- as.numeric(paste0(line[[1]][27],line[[1]][28],line[[1]][29],line[[1]][30],line[[1]][31],line[[1]][32],line[[1]][33],line[[1]][34],line[[1]][35]))
+    # Parse water level quality
+    meas[3] <- as.numeric(paste0(line[[1]][37],line[[1]][38],line[[1]][39],line[[1]][40]))
+    # Parse water discharge (m^3/s)
+    meas[4] <- as.numeric(paste0(line[[1]][52],line[[1]][53],line[[1]][54],line[[1]][55],line[[1]][56],line[[1]][57],line[[1]][58],line[[1]][59],line[[1]][60]))
+    # Parse water discharge quality
+    meas[5] <- as.numeric(paste0(line[[1]][62],line[[1]][63],line[[1]][64],line[[1]][65]))
     }
-    # Check to determine if data sorted correctly.  Specifically, missing data may be skipped and the quality flag may be inserted.
-    
     print(meas)
   }
   
