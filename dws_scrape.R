@@ -35,13 +35,13 @@ for (i in 1:100) {
   data <- strsplit(data,"\n") # separate by line break code
   
   ## Find start and end of data
-  for (i in 1:length(data[[1]])) {
-    line <- strsplit(data[[1]][i]," ")
+  for (j in 1:length(data[[1]])) {
+    line <- strsplit(data[[1]][j]," ")
     if (line[[1]][1]=="DATE") {
-      ln1 <- i+1
+      ln1 <- j+1
     }
     if (line[[1]][1]=="</pre></p>\r") {
-      ln2 <- i-1
+      ln2 <- j-1
     }
   }
   
@@ -53,7 +53,7 @@ for (i in 1:100) {
   start <- as.character(date(dt))
   
   ## Split and sort data into table
-  x <- foreach(i=ln1:ln2, .combine = 'rbind') %dopar% {
+  x <- foreach(j=ln1:ln2, .combine = 'rbind') %dopar% {
     meas <- array(NA, dim = 5)
     # The format of this file is as follows:
     # POS.  1-8   = Date of measurement CCYYMMDD
@@ -64,30 +64,47 @@ for (i in 1:100) {
     # POS. 62-65  = Quality code
     
     # Parse date and time
-    line <- strsplit(data[[1]][i]," ")
+    line <- strsplit(data[[1]][j]," ")
     
     dt <- ymd_hms(paste0(line[[1]][1],"T",line[[1]][2]))
     dt <- force_tz(dt, tzone = "Africa/Johannesburg") # date and time, Unix standard (seconds, UTC), rem with_tz()
     meas[1] <- dt
     
     column <- 2
-    for (j in 3:length(line[[1]])) {
-      if (is.na(as.numeric(line[[1]][j]))==FALSE) {
-        meas[column] <- as.numeric(line[[1]][j])
+    for (k in 3:length(line[[1]])) {
+      if (is.na(as.numeric(line[[1]][k]))==FALSE) {
+        meas[column] <- as.numeric(line[[1]][k])
         column <- column+1
       }
     }
     
     # Check values
-    if (is.na(meas[5])) {
-      if (meas[4]==round(meas[4])) {
-        meas[5] <- meas[4]
-        meas[4] <- NA
+    if (is.na(meas[5])) { # check to see if last value is missing; all QC columns are full, so this would mean that the discharge column is empty
+      if (is.na(meas[4])) { # check to see if next-to-last value is missing, would indicate that flow column was missing
+        if (is.na(meas[3]==FALSE)) {
+          if (meas[3]==round(meas[3])) { # all QC flags are whole numbers
+            meas[5] <- meas[3] # this would actually be the discharge QC
+            meas[4] <- NA # with no discharge data
+          }
+        }
+        if (is.na(meas[2]==FALSE)) {
+          if (meas[2]==round(meas[2])) { # all QC flags are whole numbers
+            meas[3] <- meas[2] # this would actually be the level QC
+            meas[2] <- NA # with no level data
+          }
+        }
+      } else { # meaning, no last column, but there is a value in the next to last -> only discharge missing
+        if (is.na(meas[4])==FALSE) {
+          if (meas[4]==round(meas[4])) {
+            meas[5] <- meas[4] # this would actually be the discharge QC
+            meas[4] <- NA # with no discharge data
+          }
+        }
       }
     }
     print(meas)
   }
-  
+    
   ## Write data so far to table
   x <- data.frame(x)
   y <- x %>%
@@ -104,5 +121,4 @@ for (i in 1:100) {
     if (begin >= terminate) {break}
   }
 }
-
 
