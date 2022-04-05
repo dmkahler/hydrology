@@ -34,6 +34,9 @@ for (i in 1:100) {
   data <- getURL(api_end) # not in JSON, imports as unformatted text.  THIS IS IMPORT LINE!
   data <- strsplit(data,"\n") # separate by line break code
   
+  ## Check that data were returned
+  if (data[[1]][1] != "No data for requested period.\r") {
+  
   ## Find start and end of data
   for (j in 1:length(data[[1]])) {
     line <- strsplit(data[[1]][j]," ")
@@ -116,7 +119,7 @@ for (i in 1:100) {
   write_csv(y, paste0(station,".csv"), append = TRUE)
   
   ## Check to see if we're importing the same day
-  if ((is.na(ymd(next_start))&(is.na(ymd(start))==FALSE))==FALSE) {
+  if ((is.na(ymd(next_start))==FALSE)&(is.na(ymd(start))==FALSE)) {
     next_start_lub <- force_tz(as_datetime(ymd(next_start)), tzone = "Africa/Johannesburg") # Next start date determined above based on the date of the last line in the downloaded data
     this_start_lub <- force_tz(as_datetime(ymd(start)), tzone = "Africa/Johannesburg") # Existing start date from the downloaded data (this cycle)
     
@@ -130,6 +133,9 @@ for (i in 1:100) {
     
     ## Reset start
     start <- as.character(date(with_tz(next_start_lub, tzone = "Africa/Johannesburg")))
+  }
+  } else {
+    
   }
 }
 
