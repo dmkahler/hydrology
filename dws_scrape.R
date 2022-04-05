@@ -50,7 +50,7 @@ for (i in 1:100) {
   dt <- ymd_hms(paste0(line[[1]][1],"T",line[[1]][2]))
   dt <- force_tz(dt, tzone = "Africa/Johannesburg")
   dt <- dt+(12*60) # adds 12 minutes to the last time to determine the next time for data
-  start <- as.character(date(dt))
+  next_start <- as.character(date(dt))
   
   ## Split and sort data into table
   x <- foreach(j=ln1:ln2, .combine = 'rbind') %dopar% {
@@ -81,13 +81,13 @@ for (i in 1:100) {
     # Check values
     if (is.na(meas[5])) { # check to see if last value is missing; all QC columns are full, so this would mean that the discharge column is empty
       if (is.na(meas[4])) { # check to see if next-to-last value is missing, would indicate that flow column was missing
-        if (is.na(meas[3]==FALSE)) {
+        if (is.na(meas[3])==FALSE) {
           if (meas[3]==round(meas[3])) { # all QC flags are whole numbers
             meas[5] <- meas[3] # this would actually be the discharge QC
             meas[4] <- NA # with no discharge data
           }
         }
-        if (is.na(meas[2]==FALSE)) {
+        if (is.na(meas[2])==FALSE) {
           if (meas[2]==round(meas[2])) { # all QC flags are whole numbers
             meas[3] <- meas[2] # this would actually be the level QC
             meas[2] <- NA # with no level data
@@ -115,10 +115,21 @@ for (i in 1:100) {
   
   write_csv(y, paste0(station,".csv"), append = TRUE)
   
-  ## Check to see if we're at the end
-  if (is.na(ymd(start))==FALSE) {
-    begin <- force_tz(as_datetime(ymd(start)), tzone = "Africa/Johannesburg")
-    if (begin >= terminate) {break}
+  ## Check to see if we're importing the same day
+  if ((is.na(ymd(next_start))&(is.na(ymd(start))==FALSE))==FALSE) {
+    next_start_lub <- force_tz(as_datetime(ymd(next_start)), tzone = "Africa/Johannesburg") # Next start date determined above based on the date of the last line in the downloaded data
+    this_start_lub <- force_tz(as_datetime(ymd(start)), tzone = "Africa/Johannesburg") # Existing start date from the downloaded data (this cycle)
+    
+    ## Check to see if we're importing the same day
+    if (next_start_lub==this_start_lub) {
+      next_start_lub <- next_start_lub + (24*3600) # increase start by one day.
+    }
+    
+    ## Check to see if we're at the end
+    if (next_start_lub >= terminate) {break}
+    
+    ## Reset start
+    start <- as.character(date(with_tz(next_start_lub, tzone = "Africa/Johannesburg")))
   }
 }
 
