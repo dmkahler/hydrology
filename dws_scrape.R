@@ -62,32 +62,47 @@ for (i in 1:100) {
     # POS. 37-40  = Quality code
     # POS. 52-60  = Corrected flow in cubic metres/sec
     # POS. 62-65  = Quality code
-    line <- strsplit(data[[1]][i],"")
+    
     # Parse date and time
-    dt <- ymd_hms(paste0(line[[1]][1],line[[1]][2],line[[1]][3],line[[1]][4],line[[1]][5],line[[1]][6],line[[1]][7],line[[1]][8],"T",line[[1]][10],line[[1]][11],line[[1]][12],line[[1]][13],line[[1]][14],line[[1]][15]))
+    line <- strsplit(data[[1]][i]," ")
+    
+    dt <- ymd_hms(paste0(line[[1]][1],"T",line[[1]][2]))
     dt <- force_tz(dt, tzone = "Africa/Johannesburg") # date and time, Unix standard (seconds, UTC), rem with_tz()
     meas[1] <- dt
-    # Parse water level (m)
-    meas[2] <- as.numeric(paste0(line[[1]][27],line[[1]][28],line[[1]][29],line[[1]][30],line[[1]][31],line[[1]][32],line[[1]][33],line[[1]][34],line[[1]][35]))
-    # Parse water level quality
-    meas[3] <- as.numeric(paste0(line[[1]][37],line[[1]][38],line[[1]][39],line[[1]][40]))
-    # Parse water discharge (m^3/s)
-    meas[4] <- as.numeric(paste0(line[[1]][52],line[[1]][53],line[[1]][54],line[[1]][55],line[[1]][56],line[[1]][57],line[[1]][58],line[[1]][59],line[[1]][60]))
-    # Parse water discharge quality
-    meas[5] <- as.numeric(paste0(line[[1]][62],line[[1]][63],line[[1]][64],line[[1]][65]))
+    
+    column <- 2
+    for (j in 3:length(line[[1]])) {
+      if (is.na(as.numeric(line[[1]][j]))==FALSE) {
+        meas[column] <- as.numeric(line[[1]][j])
+        column <- column+1
+      }
+    }
+    
+    # Check values
+    if (is.na(meas[5])) {
+      if (meas[4]==round(meas[4])) {
+        meas[5] <- meas[4]
+        meas[4] <- NA
+      }
     }
     print(meas)
   }
   
   ## Write data so far to table
   x <- data.frame(x)
-  x <- x %>%
-    mutate(dts=as.character(with_tz(as_datetime(X1), tzone = "Africa/Johannesburg")))
-  write_csv(x, paste0(station,".csv"), append = TRUE)
+  y <- x %>%
+    mutate(dt=as.character(with_tz(as_datetime(X1), tzone = "Africa/Johannesburg"))) %>%
+    mutate(unix=X1, level=X2, levelqc=X3, flow=X4, flowqc=X5) %>%
+    select(-X1,-X2,-X3,-X4,-X5)
+  # Headers: Date, UNIX date, Level (m), Level QC, Flow (m^3/s), Flow QC
+  
+  write_csv(y, paste0(station,".csv"), append = TRUE)
   
   ## Check to see if we're at the end
-  begin <- force_tz(as_datetime(ymd_hms(start)), tzone = "Africa/Johannesburg")
-  if (begin >= terminate) {break}
+  if (is.na(ymd(start))==FALSE) {
+    begin <- force_tz(as_datetime(ymd(start)), tzone = "Africa/Johannesburg")
+    if (begin >= terminate) {break}
+  }
 }
 
 
