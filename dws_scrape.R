@@ -35,7 +35,7 @@ for (i in 1:100) {
      data <- strsplit(data,"\n") # separate by line break code
      
      ## Check that data were returned
-     if (data[[1]][1] != "No data for requested period.\r") {
+     if (data[[1]][1] != "No data for requested period.\r") { # Unique flag for DWS data.  Appears robust.
           
           ## Find start and end of data
           for (j in 1:length(data[[1]])) {
@@ -109,9 +109,18 @@ for (i in 1:100) {
           }
           
           ## Write data so far to table
-          x <- data.frame(x)
-          y <- x %>%
-               mutate(dt=as.character(with_tz(as_datetime(X1), tzone = "Africa/Johannesburg"))) %>%
+          # Make sure that the data are in the correct order.  Should be five wide.  If only one date is returned, it will form a vertical matrix.
+          if (is.na(ncol(x))) {
+               reform <- array(NA, dim = c(1,5))
+               for (k in 1:5) {
+                    reform[1,k] <- x[k]
+               }
+               x <- reform
+               rm(reform)
+          }
+          z <- data.frame(x)
+          y <- z %>%
+               mutate(dt=as.character(with_tz(as_datetime(X1), tzone = "Africa/Johannesburg"))) %>% # Problems arise if there is only one data point.
                mutate(unix=X1, level=X2, levelqc=X3, flow=X4, flowqc=X5) %>%
                select(-X1,-X2,-X3,-X4,-X5)
           # Headers: Date, UNIX date, Level (m), Level QC, Flow (m^3/s), Flow QC
@@ -135,7 +144,10 @@ for (i in 1:100) {
                start <- as.character(date(with_tz(next_start_lub, tzone = "Africa/Johannesburg")))
           }
      } else {
-          
+          ## If no data were returned: "No data for requested period.\r"
+          this_start_lub <- force_tz(as_datetime(ymd(start)), tzone = "Africa/Johannesburg") # Current start date in lubridate type
+          next_start_lub <- this_start_lub + (365*24*3600) # increase start by one year, the approximate amount of time in the primary data pull.
+          start <- as.character(date(with_tz(next_start_lub, tzone = "Africa/Johannesburg")))
      }
 }
 
