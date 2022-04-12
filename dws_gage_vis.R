@@ -1,4 +1,4 @@
-
+# To visualize data scraped from DWS gages near Musina
 
 library(readr)
 library(ggplot2)
@@ -25,7 +25,16 @@ q <- z %>%
      mutate(dt=with_tz(as_datetime(UNIX), tzone = "Africa/Johannesburg"))
 
 ggplot(q) +
-  geom_point(aes(x=dt,y=flow_m3s))
+     geom_point(aes(x=dt,y=flow_m3s)) +
+     ylim(c(0,10000)) +
+     xlab("Date") + 
+     ylab(TeX('Discharge $(m^3/s)$')) + 
+     theme(panel.background = element_rect(fill = "white", colour = "black")) + 
+     theme(aspect.ratio = 1) +
+     theme(axis.text = element_text(face = "plain", size = 12))
+
+## Harmonic flow
+
 
 ## Annual flood
 a <- q %>%
@@ -57,7 +66,7 @@ ann_flood_hist <- ggplot(a,aes(x=ann.max.flow)) +
      theme(legend.position="right") + 
      theme(aspect.ratio = 1) +
      theme(axis.text = element_text(face = "plain", size = 12))
-ggsave("annual_flood_hist.eps", ann_flood, device = "eps", dpi = 72)
+ggsave("annual_flood_hist.eps", ann_flood_hist, device = "eps", dpi = 72)
 
 ann_drought <- ggplot(a) +
      geom_col(aes(x=hydro_year,y=ann.min.flow)) +
@@ -69,7 +78,7 @@ ann_drought <- ggplot(a) +
      theme(legend.position="right") + 
      theme(aspect.ratio = 1) +
      theme(axis.text = element_text(face = "plain", size = 12))
-ggsave("annual_drought.eps", ann_flood, device = "eps", dpi = 72)
+ggsave("annual_drought.eps", ann_drought, device = "eps", dpi = 72)
 
 ann_drought_hist <- ggplot(a,aes(x=ann.min.flow)) +
      geom_histogram(breaks = (c(0:10)), color = "black", fill = "gray", na.rm = TRUE) +
@@ -79,21 +88,21 @@ ann_drought_hist <- ggplot(a,aes(x=ann.min.flow)) +
      theme(legend.position="right") + 
      theme(aspect.ratio = 1) +
      theme(axis.text = element_text(face = "plain", size = 12))
-ggsave("annual_drought_hist.eps", ann_flood, device = "eps", dpi = 72)
+ggsave("annual_drought_hist.eps", ann_drought_hist, device = "eps", dpi = 72)
 
-## Monthly means
+## Monthly averages
 m <- q %>%
      mutate(mon=month(dt)) %>%
      group_by(mon) %>%
-     summarize(mon.mean.flow=mean(flow_m3s,na.rm=TRUE),mon.sd.flow=stdev(flow_m3s)) %>%
+     summarize(mon.mean.flow=mean(flow_m3s,na.rm=TRUE),mon.sd.flow=stdev(flow_m3s),mon.med.flow=median(flow_m3s,na.rm=TRUE)) %>%
      na_if(Inf) %>%
      na_if(-Inf) %>%
      na_if(NaN)
 m$label <- c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+m$label <- factor(m$label, levels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
 
 mon_mean <- ggplot(m) +
      geom_col(aes(x=label,y=mon.mean.flow)) +
-     xlim(c(1955,2022)) +
      ylim(c(0,200)) +
      xlab("Month") + 
      ylab(TeX('Monthly Mean Discharge $(m^3/s)$')) + 
@@ -101,6 +110,16 @@ mon_mean <- ggplot(m) +
      theme(legend.position="right") + 
      theme(aspect.ratio = 1) +
      theme(axis.text = element_text(face = "plain", size = 12))
-ggsave("annual_flood.eps", ann_flood, device = "eps", dpi = 72)
+ggsave("mon_mean.eps", mon_mean, device = "eps", dpi = 72)
 
+mon_median <- ggplot(m) +
+     geom_col(aes(x=label,y=mon.med.flow)) +
+     ylim(c(0,100)) +
+     xlab("Month") + 
+     ylab(TeX('Monthly Median Discharge $(m^3/s)$')) + 
+     theme(panel.background = element_rect(fill = "white", colour = "black")) + 
+     theme(legend.position="right") + 
+     theme(aspect.ratio = 1) +
+     theme(axis.text = element_text(face = "plain", size = 12))
+ggsave("mon_med.eps", mon_median, device = "eps", dpi = 72)
 
