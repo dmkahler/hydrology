@@ -34,9 +34,6 @@ ggplot(q) +
      theme(aspect.ratio = 1) +
      theme(axis.text = element_text(face = "plain", size = 12))
 
-## Harmonic flow
-
-
 ## Annual flood
 a <- q %>%
      mutate(hydro_year=hyd.yr(dt, h = "S")) %>%
