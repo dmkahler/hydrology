@@ -70,11 +70,11 @@ ggsave("annual_flood_hist.eps", ann_flood_hist, device = "eps", dpi = 72)
 a$log_q <- log(a$ann.max.flow, base = 10) # log transform
 T_R <- 200 # return period in years (in this case)
 Fx <- 1 - (1/T_R)
-m <- mean(a$log_q, na.rm = TRUE)
+mu <- mean(a$log_q, na.rm = TRUE)
 s <- sd(a$log_q, na.rm = TRUE)
 c <- skew(a$log_q) # NA removed by default
 lp3.x <- pt3(c,Fx)
-lp3.y <- (lp3.x * s) + m
+lp3.y <- (lp3.x * s) + mu
 lp3.z <- 10^lp3.y # this is the T_R flood level 200-year flood is 13,667 m^3/s
 
 ann_drought <- ggplot(a) +
@@ -133,5 +133,5 @@ mon_median <- ggplot(m) +
 ggsave("mon_med.eps", mon_median, device = "eps", dpi = 72)
 
 # Average annual flow
-
+ave.ann.flow <- 365.25 * 24 * 3600 * mean(m$mon.mean.flow)
 
