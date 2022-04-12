@@ -17,6 +17,7 @@ y <- y %>%
      rename(dt=X1,UNIX=X2,lev_m=X3,levQC=X4,flow_m3s=X5,flowQC=X6) # note UNIX date time is UTC
 
 z <- rbind(x,y)
+# Remove duplicate dates
 q <- z %>%
      mutate(lev_m=replace(lev_m, which(lev_m<=0),NA)) %>%
      mutate(flow_m3s=replace(flow_m3s, which(flow_m3s<=0),NA)) %>%
@@ -67,6 +68,17 @@ ann_flood_hist <- ggplot(a,aes(x=ann.max.flow)) +
      theme(aspect.ratio = 1) +
      theme(axis.text = element_text(face = "plain", size = 12))
 ggsave("annual_flood_hist.eps", ann_flood_hist, device = "eps", dpi = 72)
+
+# 200 year flood
+a$log_q <- log(a$ann.max.flow, base = 10) # log transform
+T_R <- 200 # return period in years (in this case)
+Fx <- 1 - (1/T_R)
+m <- mean(a$log_q, na.rm = TRUE)
+s <- sd(a$log_q, na.rm = TRUE)
+c <- skew(a$log_q) # NA removed by default
+lp3.x <- pt3(c,Fx)
+lp3.y <- (lp3.x * s) + m
+lp3.z <- 10^lp3.y # this is the T_R flood level 200-year flood is 13,667 m^3/s
 
 ann_drought <- ggplot(a) +
      geom_col(aes(x=hydro_year,y=ann.min.flow)) +
@@ -122,4 +134,7 @@ mon_median <- ggplot(m) +
      theme(aspect.ratio = 1) +
      theme(axis.text = element_text(face = "plain", size = 12))
 ggsave("mon_med.eps", mon_median, device = "eps", dpi = 72)
+
+# Average annual flow
+
 
