@@ -34,16 +34,37 @@ ggplot(q) +
      theme(aspect.ratio = 1) +
      theme(axis.text = element_text(face = "plain", size = 12))
 
-## Annual flood
+## Annual data
 a <- q %>%
      mutate(hydro_year=hyd.yr(dt, h = "S")) %>%
      group_by(hydro_year) %>%
      summarize(ann.min.flow=min(flow_m3s,na.rm=TRUE),ann.mean.flow=mean(flow_m3s,na.rm=TRUE),ann.max.flow=max(flow_m3s,na.rm=TRUE)) %>%
+     mutate(annual.tot=ann.mean.flow*3600*24*365.25) %>%
      na_if(Inf) %>%
      na_if(-Inf) %>%
      na_if(NaN)
 # it appears that the warnings, length > 1, non-missing arguments, are taken care of.
 
+# Annual flow time series
+# Average annual flow
+ave.ann.flow <- 365.25 * 24 * 3600 * mean(m$mon.mean.flow)
+# Found the annual mean flow to be 1,689,908,081 m^3, that is, 1.7x10^9 m^3
+
+ann_flow <- ggplot(a) +
+     geom_col(aes(x=hydro_year,y=annual.tot)) +
+     geom_hline(yintercept = ave.ann.flow) +
+     xlim(c(1955,2022)) +
+     ylim(c(0,30000000000)) +
+     #coord_cartesian(ylim=c(0,10000000000)) + # control y lim here!
+     xlab("Hydrologic Year") + 
+     ylab(TeX('Annual Total Discharge $(m^3/y)$')) + 
+     theme(panel.background = element_rect(fill = "white", colour = "black")) + 
+     theme(legend.position="right") + 
+     theme(aspect.ratio = 1) +
+     theme(axis.text = element_text(face = "plain", size = 12))
+ggsave("annual_flow_tall.eps", ann_flow, device = "eps", dpi = 72)
+
+## Annual flood
 ann_flood <- ggplot(a) +
      geom_col(aes(x=hydro_year,y=ann.max.flow)) +
      xlim(c(1955,2022)) +
@@ -132,6 +153,8 @@ mon_median <- ggplot(m) +
      theme(axis.text = element_text(face = "plain", size = 12))
 ggsave("mon_med.eps", mon_median, device = "eps", dpi = 72)
 
-# Average annual flow
-ave.ann.flow <- 365.25 * 24 * 3600 * mean(m$mon.mean.flow)
+
+
+
+
 
