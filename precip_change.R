@@ -52,6 +52,7 @@ pgh.precip.sao <- pgh.precip %>%
      filter(hrs==1)
 
 pgh.precip.1hr <- rbind(pgh.precip.sao,pgh.precip.fm15)
+write_csv(pgh.precip.1hr,"pgh.precip.1hr.csv")
 
 pgh.ann.precip <- pgh.precip.1hr %>%
      mutate(y=hyd.yr(dt, h = "N")) %>%
