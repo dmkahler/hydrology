@@ -27,8 +27,8 @@ ggplot(t) +
      ylab("Mean Sea-Level Height (m)") +
      theme(panel.background = element_rect(fill = "white", colour = "black")) + 
      theme(aspect.ratio = 1) +
-     theme(axis.text = element_text(face = "plain", size = 12)) +
-     theme(axis.title = element_text(face = "plain", size = 12))
+     theme(axis.text = element_text(face = "plain", size = 14)) +
+     theme(axis.title = element_text(face = "plain", size = 14))
 
 ######################### Xai Xai #############################################
 # Read in CSV of river height data from gauge station E-38 at XaiXai
@@ -56,11 +56,11 @@ E38 <- ggplot(annual_E38) +
      geom_smooth(aes(x=hydroYear,y=mn), method = "lm", se = TRUE, color='blue') +
      xlab("Hydrologic Year") +
      ylab("Mean River Height (m)") +
-     annotate("text", x=2016.5, y=2.2, label = "E38") +
+     annotate("text", x=2016.5, y=2.21, label = "E38", size = 6) +
      theme(panel.background = element_rect(fill = "white", colour = "black")) + 
      theme(aspect.ratio = 0.5) +
-     theme(axis.text = element_text(face = "plain", size = 12)) +
-     theme(axis.title = element_text(face = "plain", size = 12))
+     theme(axis.text = element_text(face = "plain", size = 14)) +
+     theme(axis.title = element_text(face = "plain", size = 14))
 gE38 <- ggplotGrob(E38)
 
 ######################### Chokwe #############################################
@@ -89,11 +89,11 @@ E35 <- ggplot(annual_E35) +
      geom_smooth(aes(x=hydroYear,y=mn), method = "lm", se = TRUE, color='blue') +
      xlab("Hydrologic Year") +
      ylab("Mean River Height (m)") +
-     annotate("text", x=2017, y=2, label = "E35") +
+     annotate("text", x=2017, y=2, label = "E35", size = 6) +
      theme(panel.background = element_rect(fill = "white", colour = "black")) + 
      theme(aspect.ratio = 0.5) +
-     theme(axis.text = element_text(face = "plain", size = 12)) +
-     theme(axis.title = element_text(face = "plain", size = 12))
+     theme(axis.text = element_text(face = "plain", size = 14)) +
+     theme(axis.title = element_text(face = "plain", size = 14))
 gE35 <- ggplotGrob(E35)
 
 grid::grid.newpage()
