@@ -1,9 +1,6 @@
 # To visualize data scraped from DWS gages near Musina
 
-library(readr)
-library(ggplot2)
-library(dplyr)
-library(lubridate)
+library(tidyverse)
 library(latex2exp)
 # install_github("LimpopoLab/hydrostats")
 library(hydrostats)
@@ -39,10 +36,10 @@ a <- q %>%
      mutate(hydro_year=hyd.yr(dt, h = "S")) %>%
      group_by(hydro_year) %>%
      summarize(ann.min.flow=min(flow_m3s,na.rm=TRUE),ann.mean.flow=mean(flow_m3s,na.rm=TRUE),ann.max.flow=max(flow_m3s,na.rm=TRUE)) %>%
-     mutate(annual.tot=ann.mean.flow*3600*24*365.25) %>%
-     na_if(Inf) %>%
-     na_if(-Inf) %>%
-     na_if(NaN)
+     mutate(annual.tot=ann.mean.flow*3600*24*365.25) #%>%
+     #na_if(Inf) %>%
+     #na_if(-Inf) %>%
+     #na_if(NaN)
 # it appears that the warnings, length > 1, non-missing arguments, are taken care of.
 
 # Annual flow time series
@@ -50,18 +47,31 @@ a <- q %>%
 ave.ann.flow <- 365.25 * 24 * 3600 * mean(m$mon.mean.flow)
 # Found the annual mean flow to be 1,689,908,081 m^3, that is, 1.7x10^9 m^3
 
-ann_flow <- ggplot(a) +
-     geom_col(aes(x=hydro_year,y=annual.tot)) +
-     geom_hline(yintercept = ave.ann.flow) +
+modBeitbridge <- lm(a$annual.tot ~ a$hydro_year)
+# Coefficients:
+#                     Estimate Std. Error t value Pr(>|t|)   
+#      (Intercept)   1.748e+11  5.308e+10   3.293  0.00168 **
+#      a$hydro_year -8.566e+07  2.669e+07  -3.210  0.00215 **
+#      ---
+#      Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#                         2.5 %       97.5 %
+#      (Intercept)  68580428714 280986119165
+#      a$hydro_year  -139060814    -32260553
+
+ggplot(a) + #   ann_flow <- 
+     geom_point(aes(x=hydro_year,y=(annual.tot/1e9))) +
+     #geom_hline(yintercept = ave.ann.flow) +
+     geom_smooth(aes(x=hydro_year,y=(annual.tot/1e9)), method = "lm", se = TRUE, color='blue') +
      xlim(c(1955,2022)) +
-     ylim(c(0,30000000000)) +
+     ylim(c(0,30)) +
      #coord_cartesian(ylim=c(0,10000000000)) + # control y lim here!
      xlab("Hydrologic Year") + 
-     ylab(TeX('Annual Total Discharge $(m^3/y)$')) + 
+     ylab(TeX('Annual Total Discharge $(\\times 10^{9} m^3/y)$')) + 
      theme(panel.background = element_rect(fill = "white", colour = "black")) + 
      theme(legend.position="right") + 
      theme(aspect.ratio = 1) +
-     theme(axis.text = element_text(face = "plain", size = 12))
+     theme(axis.text = element_text(face = "plain", size = 14)) +
+     theme(axis.title = element_text(face = "plain", size = 14))
 ggsave("annual_flow_tall.eps", ann_flow, device = "eps", dpi = 72)
 
 ## Annual flood

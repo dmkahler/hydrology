@@ -110,22 +110,13 @@ y <- x %>%
 m <- lm(y$height~y$Year)
 summary(m)
 confint(m)
-# Call:
-#      lm(formula = y$height ~ y$Year)
-# Residuals:
-#      Min       1Q   Median       3Q      Max 
-# -0.23808 -0.16895 -0.01556  0.12205  0.32043 
 # Coefficients:
-#      Estimate Std. Error t value Pr(>|t|)
-# (Intercept)  1.3666340  7.5547394   0.181    0.858
-# y$Year      -0.0004995  0.0037623  -0.133    0.895
-# Residual standard error: 0.1741 on 26 degrees of freedom
-# (3 observations deleted due to missingness)
-# Multiple R-squared:  0.0006776,	Adjusted R-squared:  -0.03776 
-# F-statistic: 0.01763 on 1 and 26 DF,  p-value: 0.8954
-#                   2.5 %       97.5 %
-# (Intercept) -14.16235519 16.895623166
-# y$Year       -0.00823302  0.007233954
+# Estimate Std. Error t value Pr(>|t|)
+# (Intercept)  0.678766   7.541623   0.090    0.929
+# y$Year      -0.000155   0.003756  -0.041    0.967
+# 2.5 %       97.5 %
+#      (Intercept) -14.823262344 16.180795023
+# y$Year       -0.007875056  0.007565065
 
 ggplot(y) +
      geom_point(aes(x=Year,y=height)) +
@@ -134,8 +125,8 @@ ggplot(y) +
      ylab("Mean Gauge Height (m)") +
      theme(panel.background = element_rect(fill = "white", colour = "black")) + 
      theme(aspect.ratio = 1) +
-     theme(axis.text = element_text(face = "plain", size = 12)) +
-     theme(axis.title = element_text(face = "plain", size = 12))
+     theme(axis.text = element_text(face = "plain", size = 14)) +
+     theme(axis.title = element_text(face = "plain", size = 14))
 
 
 
