@@ -31,18 +31,18 @@ ggplot(CO3) +
            axis.title = element_text(face = "plain", size = 14))
 
 ggplot(x) +
-     geom_point(aes(x=C,y=`C*`,shape=Augmentation), size=3) +
+     geom_point(aes(x=C,y=`C*`,shape=Augmentation), size=6) +
      scale_shape_manual(values=c(1,5), labels=c(expression(CaCl[2],CaCO[3])) ) +
      xlab("Equilibrium Concentration (mg/l)") + 
      ylab("Sorbed Mass (mg/g)") + 
      theme(aspect.ratio = 1, 
            panel.background = element_rect(fill = "white", colour = "black")) +
-     theme(axis.text = element_text(face = "plain", size = 14), 
-           axis.title = element_text(face = "plain", size = 14)) +
+     theme(axis.text = element_text(face = "plain", size = 18), 
+           axis.title = element_text(face = "plain", size = 18)) +
      theme(legend.position="right", 
            legend.key = element_blank(), 
-           legend.text = element_text(face = "plain", size = 12), 
-           legend.title = element_text(face = "plain", size = 12)) 
+           legend.text = element_text(face = "plain", size = 16), 
+           legend.title = element_text(face = "plain", size = 16)) 
 
 
 
