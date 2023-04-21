@@ -8,8 +8,11 @@ x <- read_csv("CaAugmentation.csv")
 Cl2 <- filter(x, Augmentation=="CaCl2")
 CO3 <- filter(x, Augmentation=="CaCO3")
 
+Cl2mod <- lm(Cl2$Cstar ~ 0 + Cl2$C)
+summary(Cl2mod)
+
 ggplot(Cl2) +
-     geom_point(aes(x=C,y=`C*`), size=3) +
+     geom_point(aes(x=C,y=Cstar), size=3) +
      xlab("Equilibrium Concentration (mg/l)") + 
      ylab("Sorbed Mass (mg/g)") + 
      xlim(c(0,8)) +
@@ -19,8 +22,11 @@ ggplot(Cl2) +
      theme(axis.text = element_text(face = "plain", size = 14), 
            axis.title = element_text(face = "plain", size = 14))
 
+CO3mod <- lm(CO3$Cstar ~ 0 + CO3$C)
+summary(CO3mod)
+
 ggplot(CO3) +
-     geom_point(aes(x=C,y=`C*`), size=3) +
+     geom_point(aes(x=C,y=Cstar), size=3) +
      xlab("Equilibrium Concentration (mg/l)") + 
      ylab("Sorbed Mass (mg/g)") + 
      xlim(c(0,2)) +
@@ -31,7 +37,7 @@ ggplot(CO3) +
            axis.title = element_text(face = "plain", size = 14))
 
 ggplot(x) +
-     geom_point(aes(x=C,y=`C*`,shape=Augmentation), size=6) +
+     geom_point(aes(x=C,y=Cstar,shape=Augmentation), size=6) +
      scale_shape_manual(values=c(1,5), labels=c(expression(CaCl[2],CaCO[3])) ) +
      xlab("Equilibrium Concentration (mg/l)") + 
      ylab("Sorbed Mass (mg/g)") + 
