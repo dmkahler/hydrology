@@ -9,34 +9,40 @@ high <- c( 0.9,     1.24,       0.639,        0.0748,                  0.1273,  
 lows <- c( 0.9,     0.00755,    0.0081,       0.000117,                0.1273,  0.00515,    0.0145,       0.00071)
 dat <- data.frame(type, cost, valu, high, lows)
 
-ggplot(dat, aes(fill=cost, y=valu, x=type)) + 
-     geom_bar(position="stack", stat="identity") +
+full <- ggplot(dat, aes(fill=cost, y=valu, x=type)) + 
+     geom_bar(position="stack", stat="identity", show.legend = FALSE) +
      xlab("") +
-     ylab("Cost ($)") +
+     ylab("Cost ($/kWh)") +
      guides(fill=guide_legend(title="Impact Categories")) +
      theme(panel.background = element_rect(fill = "white", colour = "black")) + 
      theme(aspect.ratio = 1.6, 
            panel.background = element_rect(fill = "white", colour = "black")) +
-     theme(axis.text = element_text(face = "plain", size = 18), 
-           axis.title = element_text(face = "plain", size = 18)) +
+     theme(axis.text = element_text(face = "plain", size = 11), 
+           axis.title = element_text(face = "plain", size = 11)) +
      theme(legend.position="right", 
            legend.key = element_blank(), 
-           legend.text = element_text(face = "plain", size = 16), 
-           legend.title = element_text(face = "plain", size = 16)) 
+           legend.text = element_text(face = "plain", size = 11), 
+           legend.title = element_text(face = "plain", size = 11)) 
+gfull <- ggplotGrob(full)
 
-ggplot(dat, aes(fill=cost, y=valu, x=type)) + 
+werr <- ggplot(dat, aes(fill=cost, y=valu, x=type)) + 
      geom_bar(position="dodge", stat="identity") +
      geom_errorbar(aes(ymin = lows, ymax = high), width = 0.3, position = position_dodge(0.9)) +
      coord_cartesian(ylim = c(0,1.5)) +
      xlab("") +
-     ylab("Cost ($)") +
+     ylab("") +
+     annotate("text", x="Gas", y=1.4, label = "           max=8.45", size = 3) +
      guides(fill=guide_legend(title="Impact Categories")) +
      theme(panel.background = element_rect(fill = "white", colour = "black")) + 
      theme(aspect.ratio = 1.6, 
            panel.background = element_rect(fill = "white", colour = "black")) +
-     theme(axis.text = element_text(face = "plain", size = 18), 
-           axis.title = element_text(face = "plain", size = 18)) +
+     theme(axis.text = element_text(face = "plain", size = 11), 
+           axis.title = element_text(face = "plain", size = 11)) +
      theme(legend.position="right", 
            legend.key = element_blank(), 
-           legend.text = element_text(face = "plain", size = 16), 
-           legend.title = element_text(face = "plain", size = 16)) 
+           legend.text = element_text(face = "plain", size = 11), 
+           legend.title = element_text(face = "plain", size = 11)) 
+gwerr <- ggplotGrob(werr)
+
+grid::grid.newpage()
+tot <- grid::grid.draw(cbind(gfull,gwerr))
