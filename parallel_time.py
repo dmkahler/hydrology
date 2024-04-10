@@ -6,15 +6,15 @@ import multiprocessing
 
 start = time.perf_counter()
 
-def do_something(seconds):
-    print(f'Sleeping {seconds} seconds...')
-    time.sleep(seconds)
+def do_something(secs):
+    print(f'Sleeping {secs} seconds...')
+    time.sleep(secs)
     print('Done sleeping')
 
 processes = []
 
 for _ in range(10):
-    p = multiprocessing.Process(target = do_something)
+    p = multiprocessing.Process(target = do_something, args = [1.5])
     p.start()
     processes.append(p)
 
