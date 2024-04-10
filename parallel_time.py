@@ -1,3 +1,6 @@
+# Trying out parallel in python
+# based on: https://www.youtube.com/watch?v=fKl2JW_qrso
+
 import time
 
 start = time.perf_counter()
