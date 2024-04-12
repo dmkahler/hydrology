@@ -3,7 +3,7 @@
 # based on: https://www.youtube.com/watch?v=GT10PnUFLlE 
 
 import time
-# from multiprocessing import mp
+import multiprocessing as mp
 
 results_a = []
 results_b = []
@@ -15,11 +15,11 @@ def calc_a(numbers):
 
 def calc_b(numbers):
     for number in numbers:
-        results_a.append(number**3)
+        results_b.append(number**3)
 
 def calc_c(numbers):
     for number in numbers:
-        results_a.append(number**4)
+        results_c.append(number**4)
 
 if __name__ == '__main__':
     number_list = list(range(100000))
