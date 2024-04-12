@@ -1,32 +1,32 @@
 # Trying out parallel in python
-# based on: https://www.youtube.com/watch?v=fKl2JW_qrso
+# based on: https://www.youtube.com/watch?v=fKl2JW_qrso - didn't work
+# based on: https://www.youtube.com/watch?v=GT10PnUFLlE 
 
 import time
-import concurrent.futures
-import multiprocessing
+# from multiprocessing import mp
 
-start = time.perf_counter()
+results_a = []
+results_b = []
+results_c = []
 
-def do_something(secs):
-    print(f'Sleeping {secs} seconds...')
-    time.sleep(secs)
-    return 'Done sleeping'
+def calc_a(numbers):
+    for number in numbers:
+        results_a.append(number**2)
 
-with concurrent.futures.ProcessPoolExecutor() as executor:
-    f1 = executor.submit(do_something, 1)
-    print(f1.result())
+def calc_b(numbers):
+    for number in numbers:
+        results_a.append(number**3)
 
-# Multiprocessing toolbox - didn't work.
-# processes = []
+def calc_c(numbers):
+    for number in numbers:
+        results_a.append(number**4)
 
-# for _ in range(10):
-#     p = multiprocessing.Process(target = do_something)
-#     p.start()
-#     processes.append(p)
+if __name__ == '__main__':
+    number_list = list(range(100000))
+    start = time.perf_counter()
+    calc_a(number_list)
+    calc_b(number_list)
+    calc_c(number_list)
+    finish = time.perf_counter()
 
-# for process in processes:
-#     process.join()
-
-finish = time.perf_counter()
-
-print(f'Finished in {round(finish-start, 2)} seconds')
+print(f'Finished in {round(finish-start, 3)} seconds')
