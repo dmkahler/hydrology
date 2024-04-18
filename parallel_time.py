@@ -34,13 +34,15 @@ def runSR(numbers):
     for i in numbers:
         result.append(sum_square(i))
 
+    print(result)
+
     finish = time.time()
 
     print(f'Serial: {round(finish-start, 4)} seconds')
 
 if __name__ == '__main__':
 
-    numbers = range(1000, 10000, 1) # start large to work each process
+    numbers = range(90, 100, 1) # start large to make the processes large; small number of values so that they can be easily compared; 90 to 100 is faster in serial.  CONFIRMED!
 
     runMP(numbers)
     runSR(numbers)
