@@ -12,11 +12,8 @@ def sum_square(number):
         s += i * i
     return(s)
 
-start = time.time()
-
-if __name__ == '__main__':
-
-    numbers = range(10)
+def runMP(numbers):
+    start = time.time()
 
     p = Pool()
     result = p.map(sum_square, numbers)
@@ -25,10 +22,25 @@ if __name__ == '__main__':
     p.close()
     p.join()
 
-finish = time.time()
+    finish = time.time()
 
-print(f'Finished in {round(finish-start, 3)} seconds')
+    print(f'Parallel: {round(finish-start, 4)} seconds')
 
-# for number list 1e5:
-# in order: 0.071 seconds
-# in multiprocess 
+def runSR(numbers):
+    start = time.time()
+
+    result = []
+
+    for i in numbers:
+        result.append(sum_square(i))
+
+    finish = time.time()
+
+    print(f'Serial: {round(finish-start, 4)} seconds')
+
+if __name__ == '__main__':
+
+    numbers = range(1000, 10000, 1) # start large to work each process
+
+    runMP(numbers)
+    runSR(numbers)
