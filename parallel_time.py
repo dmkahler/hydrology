@@ -1,40 +1,29 @@
 # Trying out parallel in python
 # based on: https://www.youtube.com/watch?v=fKl2JW_qrso - didn't work
 # based on: https://www.youtube.com/watch?v=GT10PnUFLlE - error in multiprocessing - no join, comparison was degenerate
-
+# based on: https://www.youtube.com/watch?v=u2jTn-Gj2Xw
 
 import time
-import multiprocessing as mp
+from multiprocessing import Pool
 
-results_a = []
-results_b = []
-results_c = []
-
-def calc_a(numbers):
-    for number in numbers:
-        results_a.append(number**2)
-
-def calc_b(numbers):
-    for number in numbers:
-        results_b.append(number**3)
-
-def calc_c(numbers):
-    for number in numbers:
-        results_c.append(number**4)
+def sum_square(number):
+    s = 0
+    for i in range(number):
+        s += i * i
+    return(s)
 
 start = time.time()
-processes = []
 
 if __name__ == '__main__':
-    number_list = list(range(100000))
 
-    p1 = mp.Process(target = calc_a, args = (number_list,))
-    p2 = mp.Process(target = calc_b, args = (number_list,))
-    p3 = mp.Process(target = calc_c, args = (number_list,))
+    numbers = range(10)
 
-    p1.start()
-    p2.start()
-    p3.start()
+    p = Pool()
+    result = p.map(sum_square, numbers)
+    print(result)
+
+    p.close()
+    p.join()
 
 finish = time.time()
 
