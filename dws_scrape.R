@@ -17,12 +17,12 @@ registerDoParallel(detectCores())
 # Example: https://www.dws.gov.za/Hydrology/Verified/HyData.aspx?Station=A7H008100.00&DataType=Point&StartDT=2021-01-01&EndDT=2022-01-27&SiteType=RIV
 # Waiting on quality code key (2022 Apr 04)
 base <- "https://www.dws.gov.za/Hydrology/Verified/HyData.aspx?Station="
-station <- "A7H004"
+station <- "X3H008"
 variable <- "100.00"
 stem1 <- "&DataType=Point&StartDT="
-start <- "1955-06-27"
+start <- "1967-09-01"
 stem2 <- "&EndDT="
-end <- "1992-07-15"
+end <- "2022-04-08"
 tail <- "&SiteType=RIV"
 terminate <- force_tz(as_datetime(ymd(end)), tzone = "Africa/Johannesburg")
 

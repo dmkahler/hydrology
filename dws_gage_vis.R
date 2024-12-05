@@ -5,7 +5,7 @@ library(latex2exp)
 # install_github("LimpopoLab/hydrostats")
 library(hydrostats)
 
-x <- read_csv("A7H004.csv", col_names = FALSE)
+x <- read_csv("X3H008.csv", col_names = FALSE)
 x <- x %>%
      rename(dt=X1,UNIX=X2,lev_m=X3,levQC=X4,flow_m3s=X5,flowQC=X6) # note UNIX date time is UTC
 
@@ -15,7 +15,7 @@ y <- y %>%
 
 z <- rbind(x,y)
 # Remove duplicate dates
-q <- z %>%
+q <- x %>%
      mutate(lev_m=replace(lev_m, which(lev_m<=0),NA)) %>%
      mutate(flow_m3s=replace(flow_m3s, which(flow_m3s<=0),NA)) %>%
      group_by(UNIX) %>%
@@ -33,7 +33,7 @@ ggplot(q) +
 
 ## Annual data
 a <- q %>%
-     mutate(hydro_year=hyd.yr(dt, h = "S")) %>%
+     mutate(hydro_year=hyd.yr(dt, s = "S")) %>%
      group_by(hydro_year) %>%
      summarize(ann.min.flow=min(flow_m3s,na.rm=TRUE),ann.mean.flow=mean(flow_m3s,na.rm=TRUE),ann.max.flow=max(flow_m3s,na.rm=TRUE)) %>%
      mutate(annual.tot=ann.mean.flow*3600*24*365.25) #%>%
@@ -41,10 +41,21 @@ a <- q %>%
      #na_if(-Inf) %>%
      #na_if(NaN)
 # it appears that the warnings, length > 1, non-missing arguments, are taken care of.
+hy <- array(NA, dim = nrow(q))
+for (i in 1:nrow(q)) {
+     hy[i] <- hyd.yr(q$dt[i])
+}
+
+b <- cbind(q, hy)
+a <- b %>%
+     group_by(hy) %>%
+     summarize(ann.min.flow=min(flow_m3s,na.rm=TRUE),ann.mean.flow=mean(flow_m3s,na.rm=TRUE),ann.max.flow=max(flow_m3s,na.rm=TRUE)) %>%
+     mutate(annual.tot=ann.mean.flow*3600*24*365.25) %>%
+     rename(hydro_year = hy)
 
 # Annual flow time series
 # Average annual flow
-ave.ann.flow <- 365.25 * 24 * 3600 * mean(m$mon.mean.flow)
+# ave.ann.flow <- 365.25 * 24 * 3600 * mean(m$mon.mean.flow)
 # Found the annual mean flow to be 1,689,908,081 m^3, that is, 1.7x10^9 m^3
 
 modBeitbridge <- lm(a$annual.tot ~ a$hydro_year)
@@ -63,7 +74,7 @@ ggplot(a) + #   ann_flow <-
      #geom_hline(yintercept = ave.ann.flow) +
      geom_smooth(aes(x=hydro_year,y=(annual.tot/1e9)), method = "lm", se = TRUE, color='blue') +
      xlim(c(1955,2022)) +
-     ylim(c(0,30)) +
+     ylim(c(0,2)) +
      #coord_cartesian(ylim=c(0,10000000000)) + # control y lim here!
      xlab("Hydrologic Year") + 
      ylab(TeX('Annual Total Discharge $(\\times 10^{9} m^3/y)$')) + 
