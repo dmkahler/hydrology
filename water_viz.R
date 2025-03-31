@@ -1,3 +1,5 @@
+# Figures for Bakar et al., (2005). Fluoride in drinking water and tea in the Arusha Region of Tanzania, Water.
+
 library(beanplot)
 library(ggplot2)
 library(ggpattern)
@@ -108,8 +110,8 @@ water_tea <- grid::grid.draw(cbind(gp1,gp2))
 
 tea <- factor(c(rep("Tanzania Green (loose)", 3), rep("Kilimanjaro Black (bag)", 3), rep("Bigelow Oolong (bag)", 3)), levels = c("Tanzania Green (loose)", "Kilimanjaro Black (bag)", "Bigelow Oolong (bag)"))
 Water <- factor(c(rep(c("local", "DI", "SGW"), 3)), levels = c("local", "DI", "SGW"))
-value <- c(6.34, 3.23, 4.48, 0, 2.48, 3.28, 0, 2.81, 2.68)
-se <- c(0.21, 0.06, 0.07, 0, 0.13, 0.01, 0, 0.12, 0.01)
+value <- c(6.34, 3.23, 4.48, 0, 2.67, 3.28, 0, 2.81, 2.68)
+se <- c(0.21, 0.06, 0.07, 0, 0.15, 0.01, 0, 0.12, 0.01)
 Ftea <- data.frame(tea,Water,value,se)
 ggplot(Ftea, aes(tea, y = value, fill = Water)) +
      geom_col(color = "black", position = "dodge") +
@@ -170,6 +172,23 @@ ggplot(missing, aes(tea, y = value, fill = Milk)) +
      theme(legend.text = element_text(face = "plain", size = 14)) +
      theme(axis.text.x = element_text(angle=25, vjust=0.7, hjust=0.7)) +
      theme(axis.title.x = element_blank())
+
+
+## REFERENCES!
+`Reference Years` <- c(2015, 2012, 2006, 2017, 2020, 2022, 2017, 2020, 2022, 2024, 2020, 2002, 2016, 2008, 2007, 2010, 2020, 2013, 2003, 2001, 2007, 2007, 2009, 1999, 2008, 2021, 2002, 2018, 2012)
+# excluding data and personal communications
+h <- hist(`Reference Years`)
+ggplot(h) +
+     geom_col(aes(x=water_levels, y=water_consumed), fill = "navy") +
+     xlab("Drinking Water (L per capita)") +
+     ylab("Household Responses") +
+     ylim(c(0,30)) +
+     theme(panel.background = element_rect(fill = "white", colour = "black")) +
+     theme(axis.text.x = element_text(angle=35, vjust=1, hjust=1)) +
+     theme(axis.text = element_text(face = "plain", size = 14)) +
+     theme(axis.title = element_text(face = "plain", size = 14))
+
+
 
 
 

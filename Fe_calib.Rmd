@@ -1,0 +1,51 @@
+---
+title: "Iron Calibration"
+date: "`r Sys.Date()`"
+author: "David M. Kahler"
+output: pdf_document
+header-includes: 
+      \usepackage{amsmath}
+---
+These data are from the calibration of iron measurement by the 1,10 phenanthroline method, Hach Method 8008, a USEPA approved method.  The procedure used Hach's FerroVer powder reagent pack and the prescribed $\lambda = 510\ nm$ wavelength.  
+
+
+```{r echo=FALSE, message=FALSE}
+library(readr)
+library(ggplot2)
+library(gt)
+library(dplyr)
+
+Fe <- read_csv("Fe_calib.csv")
+
+Fe %>% 
+      gt() %>% 
+      cols_align(
+            align = "left", columns = 1
+      ) %>% 
+      cols_align(
+            align = "right", columns = 2
+      ) %>% 
+      tab_header(
+            title = md("**Table 1**: Calibration Absorbances") 
+      ) %>% 
+      fmt_number(columns = 2, decimals = 3) %>% 
+      tab_source_note(md("*Instrument*: Shimadzu UV 1280"))
+```
+
+```{r echo=FALSE, message=FALSE}
+model <- lm(Absorbance ~ Concentration, data = Fe)
+Fe$lm <- model$coefficients[1] + Fe$Concentration * model$coefficients[2]
+
+ggplot(Fe) +
+geom_point(aes(x = Concentration, y = Absorbance), size = 3) +
+geom_line(aes(x = Concentration, y = lm), color = "Blue") +
+labs(x = "Concentration (mg/l)", y = "Absorbance") +
+theme(panel.background = element_rect(fill = "white", colour = "black")) +
+theme(aspect.ratio = 1) +
+theme(axis.text = element_text(face = "plain", size = 14), axis.title = element_text(face = "plain", size = 14)) +
+theme(legend.text = element_text(face = "plain", size = 14), legend.title = element_text(face = "plain", size = 14))
+```
+
+The calibration curve is $A = 0.0156 \times C + 0.0006$ with a correlation of $r^2 = 0.99$.
+
+
